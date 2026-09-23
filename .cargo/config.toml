@@ -1,0 +1,8 @@
+# Target-scoped flags only, we do NOT set [build] target here, so that the
+# host-target test workspace (contracts/tests) still builds with std.
+# Builds pass `--target riscv64imac-unknown-none-elf` explicitly (see Makefile).
+
+[target.riscv64imac-unknown-none-elf]
+rustflags = [
+    "-C", "target-feature=+zba,+zbb,+zbc,+zbs",
+]

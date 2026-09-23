@@ -1,0 +1,21 @@
+[workspace]
+resolver = "2"
+members = [
+    "contracts/account-cell-type",
+    "contracts/account-lock",
+    "contracts/sale-lock",
+    "contracts/price-cell-type",
+    "crates/cells-core",
+]
+
+# Release profile tuned for on-chain CKB scripts: small, no unwinding, with
+# overflow checks kept ON (a silent wraparound in the linked-list math would be
+# catastrophic, see docs/SPEC.md §3).
+[profile.release]
+overflow-checks = true
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
+debug = false

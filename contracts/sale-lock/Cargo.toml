@@ -1,0 +1,10 @@
+[package]
+name = "sale-lock"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "An offer lock for selling a .cell name: unlocks for the seller, or for anyone who pays the asking price (decision 0012)"
+
+[dependencies]
+ckb-std = "0.15"
+cells-core = { path = "../../crates/cells-core" }

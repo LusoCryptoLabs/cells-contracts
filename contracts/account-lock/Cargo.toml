@@ -1,0 +1,9 @@
+[package]
+name = "account-lock"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "The uniform AccountCell lock for the Cells protocol, always-success; all authorization lives in account-cell-type (decision 0002)"
+
+[dependencies]
+ckb-std = "0.15"

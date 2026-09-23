@@ -1,0 +1,11 @@
+[package]
+name = "cells-core"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "Shared core types and the uniqueness linked-list logic for the Cells protocol"
+
+# no_std for the on-chain build; std under `cargo test` so unit tests run on host.
+# blake2b-ref is a pure-Rust, no_std blake2b (also a transitive ckb-std dep).
+[dependencies]
+blake2b-ref = "0.3"

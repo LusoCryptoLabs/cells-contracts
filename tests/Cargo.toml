@@ -1,0 +1,16 @@
+# Separate workspace: these tests build for the HOST target (not RISC-V) and run
+# the compiled on-chain binaries inside ckb-testtool's mock VM.
+[workspace]
+
+[package]
+name = "tests"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+
+# ckb-testtool is used by src/lib.rs (the Loader), so it is a normal dependency.
+[dependencies]
+ckb-testtool = "0.14"
+
+[dev-dependencies]
+cells-core = { path = "../crates/cells-core" }

@@ -1,0 +1,10 @@
+[package]
+name = "price-cell-type"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "The price tag on registration: one unforgeable cell holding a discount factor, bounded in how it may change (decision 0014)"
+
+[dependencies]
+ckb-std = "0.15"
+cells-core = { path = "../../crates/cells-core" }

@@ -1,0 +1,30 @@
+name: make test
+
+# The clean-machine run: nothing preinstalled but what rust-toolchain.toml asks for.
+# If this passes, `make test` works for whoever clones the repo.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Toolchain from rust-toolchain.toml
+        run: rustup show
+      - name: A C compiler that targets RISC-V, for ckb-std's shim
+        run: sudo apt-get install -y -qq clang llvm
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+            tests/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.lock', 'tests/Cargo.lock') }}
+      - name: Build the test-treasury variant and run every suite
+        run: make test
