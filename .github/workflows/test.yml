@@ -1,4 +1,4 @@
-name: make test
+name: make test and reproduce mainnet
 
 # The clean-machine run: nothing preinstalled but what rust-toolchain.toml asks for.
 # If this passes, `make test` works for whoever clones the repo.
@@ -35,3 +35,37 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.lock', 'tests/Cargo.lock') }}
       - name: Build the test-treasury variant and run every suite
         run: make test
+
+  reproduce-mainnet:
+    runs-on: ubuntu-latest
+    # No CC override here on purpose: the mainnet binaries were built with the GNU RISC-V
+    # toolchain, and cc-rs picks it up by itself once it is installed.
+    steps:
+      - uses: actions/checkout@v4
+      - name: Toolchain from rust-toolchain.toml
+        run: rustup show
+      - name: The GNU RISC-V toolchain the mainnet binaries were built with
+        run: sudo apt-get install -y -qq gcc-riscv64-unknown-elf && riscv64-unknown-elf-gcc --version | head -1
+      - name: Build with the three mainnet values
+        run: |
+          CARGO_TARGET_DIR=target/mainnet           CELLS_TREASURY_LOCK_HASH=57d926a44d83fc13b21ce037b1e31f4223e3c867cfa3f60e1324d5bfd5cd742d           CELLS_SALE_LOCK_CODE_HASH=086c8f4e9d4272e3dfbaca399792f730e6604591e87931ee6d67047a3c900879           CELLS_PRICE_CELL_TYPE_HASH=3f1c9a47d666bd0b5f9a4b2b3afd7c20216280dbcfaddd13748780cdfcbb7586           make build
+      - name: Hash each binary the way CKB does and compare with the code cells on chain
+        run: |
+          python3 - <<'PY'
+          import hashlib, sys
+          want = {
+            'account-cell-type': 'f86bdba9ff22b5018dcb90a22cdb3720cd5ea8868ab94959ac8146a6789aae30',
+            'account-lock':      'a46c19f2262abc0d0db0de3952b7477792b36b392645e0f60e74637ae3e3f13b',
+            'sale-lock':         'f1160f64a82e3509211b2903fc54f9f15cbdc4758d058f107608d30727072a93',
+            'price-cell-type':   '238e74e1d2d5bf8f06f9f4b0bb352c2addd531351a45cfeddf3ff5f6f5662342',
+          }
+          d = 'target/mainnet/riscv64imac-unknown-none-elf/release/'
+          bad = 0
+          for n, h in want.items():
+              b = open(d + n, 'rb').read()
+              g = hashlib.blake2b(b, digest_size=32, person=b'ckb-default-hash').hexdigest()
+              ok = g == h
+              bad += not ok
+              print(('MATCH  ' if ok else 'DIFFER ') + f'{n:18} {len(b):6} bytes  0x{g[:16]}...')
+          sys.exit(1 if bad else 0)
+          PY

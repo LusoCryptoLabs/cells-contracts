@@ -76,8 +76,10 @@ to a clean local build; the README has the command). One table per network, beca
 the same source with a different treasury, sale lock and price cell compiled in is a
 different binary.
 
-**Reproducing the mainnet build takes three values**, and they are all public: they end up
-inside a binary anyone can read off the chain. Without them a plain `make build` produces
+**Reproducing the mainnet build takes three values and one toolchain.** The values are all
+public, they end up inside a binary anyone can read off the chain. The toolchain is
+`riscv64-unknown-elf-gcc` 13.2.0 and rustc 1.96.0; the README says what clang produces
+instead, and by how many bytes. Without them a plain `make build` produces
 the testnet binary and the hashes below will not match, which looks like a failed
 verification and is not one.
 

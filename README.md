@@ -1,5 +1,7 @@
 # Cells contracts
 
+[![make test and reproduce mainnet](https://github.com/LusoCryptoLabs/cells-contracts/actions/workflows/test.yml/badge.svg)](https://github.com/LusoCryptoLabs/cells-contracts/actions/workflows/test.yml)
+
 The on-chain half of [cellula.id](https://cellula.id): four Nervos CKB scripts and the
 crate they share, which together keep `.cell` names unique, owned, priced and sellable.
 Live on CKB mainnet since 2026-09-21.
@@ -14,8 +16,9 @@ Live on CKB mainnet since 2026-09-21.
 
 ## Check that this is what runs
 
-The binaries on mainnet reproduce from this source. Three values are compiled in, and all
-three are public, since they end up inside a binary anyone can read off the chain:
+The binaries on mainnet reproduce from this source, with one toolchain and three values.
+The values are compiled in and all three are public, since they end up inside a binary
+anyone can read off the chain:
 
 ```sh
 CARGO_TARGET_DIR=target/mainnet \
@@ -38,6 +41,16 @@ The CKB hash of each result, against the code cell on chain, checked 2026-09-23:
 true`, or not. Without the three values, `make build` produces the test-network binary and
 the hashes will not match; that is not a failed verification.
 
+**The toolchain is part of the recipe.** `ckb-std` compiles a small C shim for the RISC-V
+target, and the mainnet binaries were built with the GNU cross-compiler,
+`riscv64-unknown-elf-gcc` 13.2.0 (Ubuntu 24.04's `gcc-riscv64-unknown-elf`), and rustc
+1.96.0, which `rust-toolchain.toml` pins. Built with clang instead, `account-cell-type`,
+`sale-lock` and `price-cell-type` come out 24, 80 and 24 bytes different and hash
+differently; they behave the same, and the difference is the compiler, not the source.
+`cc-rs` picks gcc when it is on the path and clang otherwise, without saying which. The
+`reproduce-mainnet` job in CI does this build with gcc on every push and compares the four
+hashes with the ones above, so the badge at the top is that check as well as the tests.
+
 ## Run the tests
 
 ```sh
@@ -50,8 +63,10 @@ and the cases where two of the contracts meet in one transaction. One more test 
 `ignore` and passes when asked for. A closed-loop test against our off-chain registrar is
 not here, because the registrar is not.
 
-You need the Rust in `rust-toolchain.toml` and a C compiler that targets RISC-V (`clang`),
-which `ckb-std` wants. Do not run a bare `cargo test` inside `tests/`: the treasury hash is
+You need the Rust in `rust-toolchain.toml` and a C compiler that targets RISC-V, which
+`ckb-std` wants: `gcc-riscv64-unknown-elf` to reproduce the mainnet bytes, or clang for the
+tests alone, with `CC_riscv64imac_unknown_none_elf=clang AR_riscv64imac_unknown_none_elf=llvm-ar`
+in the environment, which is what the `make test` job in CI does. Do not run a bare `cargo test` inside `tests/`: the treasury hash is
 compiled in and the mock VM cannot make a cell that hashes to the real one, so `make test`
 builds a test-treasury variant first and points the harness at it.
 
