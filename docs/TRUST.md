@@ -51,7 +51,7 @@ plainly, what that adds and what it does not:
   a sixteenth per update, at most once every six hours, never below 63 CKB on the 5+ line (the floor is
   set at the size of a treasury output), lock and capacity unchanged. It cannot touch anything else.
 - **What a stolen pricing key can do:** walk the price down to the floor over about
-  seventeen days, visibly, at most four steps a day, on a cell anyone can watch by its type id.
+  seventeen days, visibly, at most four steps a day, while the watchtower alerts on every step.
   That is the same ceiling per day as the old rule of a quarter once a day, in four moves
   rather than one, so an honest keeper can follow the coin (0014, amended). It cannot raise
   the price above the ceiling, cannot take a name, and cannot change a rule.
