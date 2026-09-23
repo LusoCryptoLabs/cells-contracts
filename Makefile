@@ -1,6 +1,15 @@
 TARGET := riscv64imac-unknown-none-elf
 CARGO  := cargo
 
+# The mainnet binaries embed the build machine's cargo home: with overflow checks on,
+# every checked arithmetic carries a panic location, and for the crates that come from
+# the registry that path starts at $CARGO_HOME, which was /root/.cargo when they were
+# built. Remapping yours to it is what makes `make build` agree byte for byte whoever
+# runs it. The target features are repeated here because setting this variable
+# replaces the ones in .cargo/config.toml rather than adding to them.
+CARGO_HOME_DIR := $(or $(CARGO_HOME),$(HOME)/.cargo)
+export CARGO_TARGET_RISCV64IMAC_UNKNOWN_NONE_ELF_RUSTFLAGS := -C target-feature=+zba,+zbb,+zbc,+zbs --remap-path-prefix=$(CARGO_HOME_DIR)=/root/.cargo
+
 .PHONY: build check fmt clippy test clean
 
 # Build the on-chain scripts (release, RISC-V).

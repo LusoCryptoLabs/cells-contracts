@@ -51,6 +51,14 @@ differently; they behave the same, and the difference is the compiler, not the s
 `reproduce-mainnet` job in CI does this build with gcc on every push and compares the four
 hashes with the ones above, so the badge at the top is that check as well as the tests.
 
+One more thing is baked in, and it is nobody's choice: with overflow checks on, every
+checked arithmetic carries the source path of the crate it sits in, and for the crates
+from the registry that path starts at the build machine's cargo home, which was
+`/root/.cargo`. Built from another home the three larger binaries come out a few dozen
+bytes different. The Makefile remaps your cargo home to that one, so `make build` agrees
+from any machine; a future upgrade should be built with a neutral prefix instead, so this
+stops mattering.
+
 ## Run the tests
 
 ```sh
