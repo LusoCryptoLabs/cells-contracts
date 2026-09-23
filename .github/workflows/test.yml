@@ -11,6 +11,13 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    # ckb-std builds a small C shim for the RISC-V target through cc-rs, which looks for
+    # riscv64-unknown-elf-gcc unless told otherwise. clang targets RISC-V out of the box.
+    env:
+      CC_riscv64imac_unknown_none_elf: clang
+      AR_riscv64imac_unknown_none_elf: llvm-ar
+      CC: clang
+      AR: llvm-ar
     steps:
       - uses: actions/checkout@v4
       - name: Toolchain from rust-toolchain.toml
