@@ -65,11 +65,10 @@ stops mattering.
 make test
 ```
 
-182 tests: the shared crate's own, and a harness that runs the real scripts in `ckb-testtool`
+183 tests: the shared crate's own, and a harness that runs the real scripts in `ckb-testtool`
 against every action, the properties over the ring and the fees, a fuzz over every parser,
-and the cases where two of the contracts meet in one transaction. One more test is marked
-`ignore` and passes when asked for. A closed-loop test against our off-chain registrar is
-not here, because the registrar is not.
+and the cases where two of the contracts meet in one transaction. A closed-loop test against
+our off-chain registrar is not here, because the registrar is not.
 
 You need the Rust in `rust-toolchain.toml` and a C compiler that targets RISC-V, which
 `ckb-std` wants: `gcc-riscv64-unknown-elf` to reproduce the mainnet bytes, or clang for the

@@ -292,7 +292,6 @@ fn two_namespaces_renewing_together_is_allowed_when_both_fees_are_paid() {
 
 /// F-2 itself: one fee, two namespaces.
 #[test]
-#[ignore = "F-2, described 2026-09 and untested until now. Run with --ignored."]
 fn one_fee_must_not_answer_two_namespaces() {
     let res = renew_in_two_namespaces(FEE_1Y);
     assert!(
