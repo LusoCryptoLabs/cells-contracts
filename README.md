@@ -65,10 +65,14 @@ stops mattering.
 make test
 ```
 
-183 tests: the shared crate's own, and a harness that runs the real scripts in `ckb-testtool`
+182 tests: the shared crate's own, and a harness that runs the real scripts in `ckb-testtool`
 against every action, the properties over the ring and the fees, a fuzz over every parser,
-and the cases where two of the contracts meet in one transaction. A closed-loop test against
-our off-chain registrar is not here, because the registrar is not.
+and the cases where two of the contracts meet in one transaction. One more is marked
+`ignore` on purpose: it is a reproduction, not a guard. It builds the transaction that
+finding F-2 in [docs/SECURITY.md](docs/SECURITY.md) describes, two namespaces sharing one
+treasury and one fee answering both, and fails, which is the point; the rule that closes it
+is one treasury per namespace, and mainnet has one. A closed-loop test against our
+off-chain registrar is not here, because the registrar is not.
 
 You need the Rust in `rust-toolchain.toml` and a C compiler that targets RISC-V, which
 `ckb-std` wants: `gcc-riscv64-unknown-elf` to reproduce the mainnet bytes, or clang for the
