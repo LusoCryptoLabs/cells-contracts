@@ -204,9 +204,9 @@ pub fn referral_cut(fee: u64) -> u64 {
 /// Taken the way the referral's tenth is: **the advertised price is what the buyer
 /// pays.** A referral comes off the treasury's share so a name costs the same with or
 /// without an invitation; a sale fee comes off the seller's proceeds, so a name listed
-/// at a thousand is bought for a thousand and the seller keeps nine hundred and ninety.
-/// Lowering it raises the smallest listing from about 630 CKB to about 6,300, because
-/// the fee has to exist as a cell; `minListingPriceCkb` derives that from this number.
+/// at ten thousand is bought for ten thousand and the seller keeps 9,900. The fee has
+/// to exist as a cell, so from 630 to 6,300 CKB it is a flat 63 CKB cell and below 630
+/// nothing (`sale_fee`); the smallest listing is one payout cell (`minListingPriceCkb`).
 pub const SALE_FEE_PERCENT: u64 = 1;
 
 /// The smallest a cell under the treasury's lock may be, in shannons.

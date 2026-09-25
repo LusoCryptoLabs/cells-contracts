@@ -22,10 +22,10 @@
 //! **Two ways to unlock:**
 //!   1. the seller is here (some input sits under `seller_lock_hash`), which is how
 //!      a listing is cancelled or the price changed;
-//!   2. the outputs pay the asking price, split: `SALE_FEE_PERCENT` of it to the
-//!      treasury and the rest to the seller. The protocol's share comes out of the
-//!      seller's proceeds and never on top of the price, so a name listed at a
-//!      thousand is bought for a thousand and the seller receives nine hundred.
+//!   2. the outputs pay the asking price, split between the treasury (`sale_fee`: 1%,
+//!      a flat 63 CKB cell from 630 to 6,300, nothing below 630) and the seller. The
+//!      share comes out of the seller's proceeds and never on top of the price, so a
+//!      name listed at ten thousand is bought for ten thousand and the seller gets 9,900.
 //!
 //! **Summing is the part that is easy to get wrong.** One payment must not settle two
 //! offers. Counting inputs under *this exact* script hash defends same-price listings
