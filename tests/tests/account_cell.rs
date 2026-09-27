@@ -2308,3 +2308,136 @@ fn property_extra_inputs_do_not_make_a_renew_expensive() {
     println!("base {base}, {} per extra input", (biggest.saturating_sub(base)) / biggest_n.max(1) as u64);
     assert!(biggest < 3_500_000_000 / 100, "{biggest} cycles is over a hundredth of a block");
 }
+
+/// Seven names and the root, in id order, with each cell's `next`: the ring the two tests
+/// below run against. The order comes from sorting, not from `between`.
+fn a_ring_of_seven() -> Vec<(Id, &'static [u8])> {
+    let names: [&'static [u8]; 7] = [b"bobby", b"carol", b"daves", b"erinn", b"frank", b"grace", b"heidi"];
+    let mut ring: Vec<(Id, &'static [u8])> = names.iter().map(|l| (account_id(l), *l)).collect();
+    ring.push((ROOT_ID, b""));
+    ring.sort();
+    ring
+}
+
+/// The arithmetic where it is used: every cell offered as the predecessor, through the
+/// contract.
+///
+/// The two tests above hold `between` and `covers` to their definition, and since both
+/// only compare, the one-byte sweep covers every order three ids can be in. What they
+/// cannot see is the call: which cell's range is read, the old `next` or the new one,
+/// and what happens to a name that is already there. This offers each candidate label to
+/// every cell of a real ring and holds the contract to a model that never calls `between`:
+/// a label goes after the largest id below its own, and nowhere if it is in the ring.
+/// Two candidates land in every gap, the wraparound one included.
+#[test]
+fn property_only_the_true_predecessor_admits_a_name() {
+    let ring = a_ring_of_seven();
+    let next_of = |k: usize| ring[(k + 1) % ring.len()].0;
+    // The model: the largest live id below. The root is zero, so there always is one.
+    let gap_of = |id: &Id| ring.iter().rposition(|(r, _)| r < id).unwrap();
+
+    let mut per_gap = vec![0u8; ring.len()];
+    let mut fresh: Vec<Vec<u8>> = Vec::new();
+    for n in 0u32..10_000 {
+        let label = format!("cand{n:04}").into_bytes();
+        let gap = gap_of(&account_id(&label));
+        if per_gap[gap] < 2 {
+            per_gap[gap] += 1;
+            fresh.push(label);
+        }
+        if per_gap.iter().all(|&c| c == 2) {
+            break;
+        }
+    }
+    assert!(per_gap.iter().all(|&c| c == 2), "some gap got no candidate: {per_gap:?}");
+    let taken: Vec<Vec<u8>> = ring.iter().filter(|(_, l)| !l.is_empty()).map(|(_, l)| l.to_vec()).collect();
+
+    let mut wrong = Vec::new();
+    let mut admitted = 0;
+    for label in fresh.iter().chain(taken.iter()) {
+        let x_id = account_id(label);
+        let is_new = !taken.contains(label);
+        for (k, (p_id, p_label)) in ring.iter().enumerate() {
+            let (w, expiry) = if p_label.is_empty() {
+                (WitnessData::default(), 0)
+            } else {
+                (records_witness(), FUTURE)
+            };
+            let (p_before, _) = account_cell(*p_id, next_of(k), expiry, p_label, &w);
+            let (p_after, p_after_w) = account_cell(*p_id, x_id, expiry, p_label, &w);
+            let (x_d, x_w) = account_cell(x_id, next_of(k), FUTURE, label, &records_witness());
+            let outs = vec![
+                outc(&p_after, &p_after_w),
+                OutC { cap: ALICE_PRICE, ..outc(&x_d, &x_w) },
+                treasury_out(cells_core::registration_fee(label, 1)),
+            ];
+            let did = verify_full(&[inc(&p_before)], &outs, b"register", &[], false, Some(&Commit::good())).is_ok();
+            let honest = is_new && k == gap_of(&x_id);
+            admitted += did as u32;
+            if did != honest {
+                let who = if p_label.is_empty() { "the root".to_string() } else { String::from_utf8_lossy(p_label).into_owned() };
+                wrong.push(format!(
+                    "{} after {who}: contract {did}, model {honest}",
+                    String::from_utf8_lossy(label)
+                ));
+            }
+        }
+    }
+    assert!(wrong.is_empty(), "{} of {} disagree:\n  {}", wrong.len(), (fresh.len() + taken.len()) * ring.len(), wrong.join("\n  "));
+    // The control: the model admitted each fresh label exactly once, so a contract that
+    // refused everything would have failed above, and so would one that admitted a name
+    // twice.
+    assert_eq!(admitted as usize, fresh.len(), "every fresh label is admitted once, and no taken one");
+}
+
+/// Recycling removes a name only through its immediate predecessor, and never the root.
+///
+/// Every ordered pair of cells in the ring, with every name expired past its grace, is
+/// offered as (predecessor, name to remove), in both input orders. The model is the ring
+/// itself: the pair is honest when the second is the first's `next` and is not the root.
+/// Removing anything else would splice the ring past a live name and lose it.
+#[test]
+fn property_only_the_immediate_successor_can_be_recycled() {
+    let ring = a_ring_of_seven();
+    let n = ring.len();
+    let next_of = |k: usize| ring[(k + 1) % n].0;
+    let t = 1_000_000;
+    let past_grace = abs_ts(t + 30 * 86_400);
+    let cell = |k: usize, next: Id| {
+        let (id, label) = ring[k];
+        if label.is_empty() {
+            account_cell(id, next, 0, label, &WitnessData::default())
+        } else {
+            account_cell(id, next, t, label, &records_witness())
+        }
+    };
+
+    let mut wrong = Vec::new();
+    let mut removed = 0;
+    for a in 0..n {
+        for b in 0..n {
+            if a == b {
+                continue;
+            }
+            let (p_before, _) = cell(a, next_of(a));
+            let (x_before, _) = cell(b, next_of(b));
+            let (p_after, p_after_w) = cell(a, next_of(b));
+            let honest = next_of(a) == ring[b].0 && ring[b].0 != ROOT_ID;
+            for swap in [false, true] {
+                let ins = if swap {
+                    vec![InC { since: past_grace, ..inc(&x_before) }, inc(&p_before)]
+                } else {
+                    vec![inc(&p_before), InC { since: past_grace, ..inc(&x_before) }]
+                };
+                let did = verify(&ins, &[outc(&p_after, &p_after_w)], b"recycle", &[], false).is_ok();
+                removed += did as u32;
+                if did != honest {
+                    wrong.push(format!("remove {b} through {a} (inputs swapped: {swap}): contract {did}, model {honest}"));
+                }
+            }
+        }
+    }
+    assert!(wrong.is_empty(), "{} disagree:\n  {}", wrong.len(), wrong.join("\n  "));
+    // The control: seven names, each removable through its predecessor, in two orders.
+    assert_eq!(removed, 14, "each name is removed once per input order, and the root never");
+}
