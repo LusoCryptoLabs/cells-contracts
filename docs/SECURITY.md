@@ -118,10 +118,18 @@ updated when the cells are.
 
 ## What has not been looked at
 
-The `between` and `covers` arithmetic was checked in pass 6 and re-derived independently in
-pass 8, where the independent derivation turned out to be the one that was wrong; a third
-reading would still be welcome. Sub-name and commit griefing economics were never modelled.
-No systematic search was made for tests that assert the same wrong thing the code does.
-And nothing here covers the wallet locks a name's owner chooses, which we have not reviewed.
+The `between` and `covers` arithmetic was checked in pass 6, re-derived independently in
+pass 8, where the independent derivation turned out to be the one that was wrong, and read
+a third time on 2026-09-27 where it is used: `tests/tests/account_cell.rs` offers every
+cell of a ring to the contract as predecessor, and every pair for recycle, against a model
+that sorts and never calls either function, and five deliberately broken copies of the
+contract fail it. Genesis runs once because the genesis transaction destroys its type-id
+token, which the contract does not itself check; on both networks it did. Sub-name and
+commit griefing economics were first modelled on 2026-09-27; that note is not public yet.
+Of the functions the tests take expected values from, only `registration_fee` and
+`sale_fee` compute what the contract enforces, and both are pinned by hand-written figures
+at every step. And the wallet locks a name's owner chooses have not been reviewed as code:
+what the contracts need from them is that nobody but the owner can spend them, and the
+known locks that let anyone spend stop counting as consent with this upgrade.
 
 Found something? Open an issue here.
