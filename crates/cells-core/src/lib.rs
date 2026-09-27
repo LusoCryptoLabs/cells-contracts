@@ -1549,3 +1549,137 @@ mod price_tests {
         assert!(!price_step_ok(10_000, 7_500));
     }
 }
+
+// --- How the sale lock is named --------------------------------------------------------
+
+/// `hash_type: type`, the byte a script carries when it names its code by type id. Every
+/// listing names the sale lock this way, and `SALE_LOCK_CODE_HASH` is that type id. The
+/// same binary named by its data hash is a script `account-cell-type` does not recognise,
+/// so `sale-lock` sells only under this hash type and `account-cell-type` counts only it.
+pub const HASH_TYPE_TYPE: u8 = 1;
+
+// --- Locks that do not prove their owner ---------------------------------------------
+//
+// `account-cell-type` takes an input under the owner's lock as the owner's consent, and
+// `sale-lock` takes an input under the seller's lock as the seller's. That holds only for
+// a lock its owner has to sign for. The anyone-can-pay rule (RFC 0026) is the other kind:
+// without a signature, anybody may spend a cell under it, provided the transaction gives
+// it back under the same lock with at least the same capacity. A stranger can do that
+// with no key at all, and a script cannot tell it from a spend the owner signed, so an
+// input under such a lock is never counted as anybody's consent.
+//
+// Both networks' deployments are compiled into every build. A type id of one network is
+// no script on the other, so the other network's entries cost bytes and nothing else, and
+// there is no build variable to forget: a mainnet build that missed one would leave every
+// owner on those locks exposed while looking correct.
+
+/// The anyone-can-pay lock and PW-lock. By type id, mainnet then testnet for each, then
+/// the older testnet anyone-can-pay deployment (code cell `0x6db4d059…:0`, still holding
+/// cells). Then the same binaries by their data hash, which is how a lock names them when it
+/// does not go through a type id: the anyone-can-pay bytes both networks run today
+/// (`0xcd69ba81…`), the older anyone-can-pay bytes (`0x0fb34395…`, what the old testnet
+/// cell holds), and PW-lock's bytes on mainnet and on testnet. All read from the two chains
+/// on 2026-09-27. PW-lock (the Ethereum-key lock pw-core used) is built with the same rule
+/// and needs no flag for it, so every PW-lock address is one.
+pub const ANYONE_CAN_PAY_CODE_HASHES: [[u8; 32]; 9] = [
+    parse_lock_hash("d369597ff47f29fbc0d47d2e3775370d1250b85140c670e4718af712983a2354"),
+    parse_lock_hash("3419a1c09eb2567f6552ee7a8ecffd64155cffe0f1796e6e61ec088d740c1356"),
+    parse_lock_hash("bf43c3602455798c1a61a596e0d95278864c552fafe231c063b3fabf97a8febc"),
+    parse_lock_hash("58c5f491aba6d61678b7cf7edf4910b1f5e00ec0cde2f42e0abb4fd9aff25a63"),
+    parse_lock_hash("86a1c6987a4acbe1a887cca4c9dd2ac9fcb07405bbeda51b861b18bbf7492c4b"),
+    parse_lock_hash("cd69ba816f7471e59110058aa37387c362ed9a240cd178f7bb1ecee386cb31e6"),
+    parse_lock_hash("0fb343953ee78c9986b091defb6252154e0bb51044fd2879fde5b27314506111"),
+    parse_lock_hash("d6a5a0edb152e88e8bbc702e164441cb3890fae35da672b408d28ca9a1bde3ee"),
+    parse_lock_hash("effe377419256d150d68368d7cb5731edad39d1805a8c2c73ce8e9615b9f9878"),
+];
+
+/// Omnilock by type id, mainnet then testnet, then the older testnet deployment (code cell
+/// `0x9154df4f…:0`, still live); then by the data hash of its bytes, mainnet's and testnet's.
+/// It follows the anyone-can-pay rule only when its args set `OMNILOCK_ANYONE_CAN_PAY` in
+/// the flags byte.
+pub const OMNILOCK_CODE_HASHES: [[u8; 32]; 5] = [
+    parse_lock_hash("9b819793a64463aed77c615d6cb226eea5487ccfc0783043a587254cda2b6f26"),
+    parse_lock_hash("f329effd1c475a2978453c8600e1eaf0bc2087ee093c3ee64cc96ec6847752cb"),
+    parse_lock_hash("79f90bb5e892d80dd213439eeab551120eb417678824f282b4ffb5f21bad2e1e"),
+    parse_lock_hash("768f306681da232ceb0b94f436c5f813377179762a831c5ad8797bd4fd2d118d"),
+    parse_lock_hash("6b29b6f10346b43c540e53806ba88ba0fe3a0c3a29d7448ef555840c8f8318fa"),
+];
+
+/// Where Omnilock keeps its flags: its args are an auth flag (1 byte) and an auth id
+/// (20 bytes), then this byte, which Omnilock requires.
+pub const OMNILOCK_FLAGS_AT: usize = 21;
+/// The flag that turns the anyone-can-pay rule on.
+pub const OMNILOCK_ANYONE_CAN_PAY: u8 = 1 << 1;
+
+/// Can anybody spend a cell under this lock without its owner?
+///
+/// Decided by the code hash alone, whatever the hash type. The lists hold the type ids
+/// these locks are deployed under and the data hashes of their binaries, so a lock that
+/// names one of them either way is refused; a type id used as a data hash, or the other
+/// way round, names bytes nobody can produce, so that lock never unlocks and refusing it
+/// as well costs nothing. An Omnilock without its flags byte is refused for the same
+/// reason: Omnilock rejects such args itself.
+///
+/// It knows these locks and no others. A different anyone-can-pay lock, a new deployment
+/// of one of these under a type id not listed here, or an always-success lock passes.
+///
+/// A name's owner is stored as a hash, so nothing here sees such a lock coming, and a name
+/// can still be transferred to one; whatever builds the transfer has to refuse it. A name
+/// that does end up owned by a lock on the list can no longer be moved, delegated, listed
+/// or given sub-names, by anyone, its owner included, and its records change only through
+/// a manager under another lock. Renewing it stays open to anyone, as for every name.
+pub fn lets_anyone_spend(code_hash: &[u8], args: &[u8]) -> bool {
+    if ANYONE_CAN_PAY_CODE_HASHES.iter().any(|h| h[..] == *code_hash) {
+        return true;
+    }
+    if OMNILOCK_CODE_HASHES.iter().any(|h| h[..] == *code_hash) {
+        return args.get(OMNILOCK_FLAGS_AT).is_none_or(|f| f & OMNILOCK_ANYONE_CAN_PAY != 0);
+    }
+    false
+}
+
+#[cfg(test)]
+mod anyone_can_pay_tests {
+    use super::*;
+
+    fn omnilock_args(flags: u8) -> [u8; 22] {
+        let mut a = [0u8; 22];
+        a[0] = 0x12; // auth flag: an Ethereum key, as CCC's EVM signer builds it
+        a[OMNILOCK_FLAGS_AT] = flags;
+        a
+    }
+
+    #[test]
+    fn anyone_can_pay_and_pw_lock_are_refused_whatever_their_args() {
+        for h in ANYONE_CAN_PAY_CODE_HASHES {
+            assert!(lets_anyone_spend(&h, &[0u8; 20]));
+            assert!(lets_anyone_spend(&h, &[0u8; 22]));
+        }
+    }
+
+    #[test]
+    fn omnilock_is_refused_only_with_the_flag() {
+        for h in OMNILOCK_CODE_HASHES {
+            assert!(!lets_anyone_spend(&h, &omnilock_args(0)));
+            assert!(lets_anyone_spend(&h, &omnilock_args(OMNILOCK_ANYONE_CAN_PAY)));
+            // Beside the other flags (admin, time lock, supply) it is still refused...
+            assert!(lets_anyone_spend(&h, &omnilock_args(0b1111)));
+            // ...and those alone do not open the lock to anybody.
+            assert!(!lets_anyone_spend(&h, &omnilock_args(0b1101)));
+            // No flags byte at all: Omnilock rejects such args, so nothing is lost.
+            assert!(lets_anyone_spend(&h, &omnilock_args(0)[..OMNILOCK_FLAGS_AT]));
+        }
+    }
+
+    #[test]
+    fn signature_locks_are_not_on_the_list() {
+        // secp256k1_blake160_sighash_all (both networks), JoyID mainnet, JoyID testnet.
+        for h in [
+            "9bd7e06f3ecf4be0f2fcd2188b23f1b9fcc88e5d4b65a8637b17723bbda3cce8",
+            "d00c84f0ec8fd441c38bc3f87a371f547190f2fcff88e642bc5bf54b9e318323",
+            "d23761b364210735c19c60561d213fb3beae2fd6172743719eff6920e020baac",
+        ] {
+            assert!(!lets_anyone_spend(&parse_lock_hash(h), &[0u8; 22]));
+        }
+    }
+}

@@ -20,12 +20,14 @@
 //! act that the seller has to sign.
 //!
 //! **Two ways to unlock:**
-//!   1. the seller is here (some input sits under `seller_lock_hash`), which is how
-//!      a listing is cancelled or the price changed;
+//!   1. the seller is here (some input sits under `seller_lock_hash`, and that lock
+//!      needs the seller to sign: an anyone-can-pay lock does not), which is how a
+//!      listing is cancelled or the price changed;
 //!   2. the outputs pay the asking price, split between the treasury (`sale_fee`: 1%,
 //!      a flat 63 CKB cell from 630 to 6,300, nothing below 630) and the seller. The
 //!      share comes out of the seller's proceeds and never on top of the price, so a
 //!      name listed at ten thousand is bought for ten thousand and the seller gets 9,900.
+//!      Only an offer that names this lock by its type id can be bought this way.
 //!
 //! **Summing is the part that is easy to get wrong.** One payment must not settle two
 //! offers. Counting inputs under *this exact* script hash defends same-price listings
@@ -37,7 +39,7 @@
 #![no_std]
 #![no_main]
 
-use cells_core::{sale_fee, TREASURY_LOCK_HASH};
+use cells_core::{lets_anyone_spend, sale_fee, HASH_TYPE_TYPE, TREASURY_LOCK_HASH};
 use ckb_std::{
     ckb_constants::Source,
     ckb_types::prelude::Entity,
@@ -61,6 +63,8 @@ enum Err {
     Unpaid = 3,
     /// The seller's share was paid but the protocol's was not.
     FeeUnpaid = 4,
+    /// A purchase of an offer that names this lock by its data hash, not its type id.
+    NotByTypeId = 5,
 }
 
 pub fn program_entry() -> i8 {
@@ -105,6 +109,14 @@ fn run() -> Result<(), Err> {
     //    total, which cannot be split. Every instance sees every input, so they agree.
     let my_code = script.code_hash();
     let my_htype: u8 = script.hash_type().into();
+    // Only by type id, which is how every listing names this lock and how
+    // `account-cell-type` recognises a sale beside its own fee (F-9). The same binary
+    // named by its data hash is a script that contract does not know, and beside a
+    // renewal one treasury output used to answer both fees. Such an offer still unlocks
+    // for its seller, above.
+    if my_htype != HASH_TYPE_TYPE {
+        return Err(Err::NotByTypeId);
+    }
     let (owed_seller, _) = owed_over_offers(Some(&seller), my_code.as_slice(), my_htype)?;
     // The seller's leg is per seller, because each seller's payout is under their own
     // lock and cannot be shared. The treasury's leg is not: every instance in this
@@ -130,13 +142,21 @@ fn run() -> Result<(), Err> {
     Ok(())
 }
 
+/// Is the seller here? Some input under `lock_hash`, under a lock that needs its holder
+/// to sign. Under an anyone-can-pay lock a stranger may spend the seller's cell with no
+/// key by handing it back topped up, so such an input is not the seller: counting it let
+/// a stranger take a listed name unpaid. `account-cell-type` mirrors this in its own
+/// `any_input_under`.
 fn any_input_under(lock_hash: &[u8; 32]) -> Result<bool, Err> {
     let mut i = 0usize;
     loop {
         match load_cell_lock_hash(i, Source::Input) {
             Ok(h) => {
                 if &h == lock_hash {
-                    return Ok(true);
+                    let lock = load_cell_lock(i, Source::Input).map_err(|_| Err::Encoding)?;
+                    if !lets_anyone_spend(lock.code_hash().as_slice(), &lock.args().raw_data()) {
+                        return Ok(true);
+                    }
                 }
                 i += 1;
             }

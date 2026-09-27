@@ -1597,6 +1597,7 @@ name = "tests"
 version = "0.1.0"
 dependencies = [
  "cells-core",
+ "ckb-system-scripts",
  "ckb-testtool",
 ]
 

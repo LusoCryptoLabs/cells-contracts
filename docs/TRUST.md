@@ -122,9 +122,9 @@ document unusable, which happened once.
 
 | contract | data hash | dep outpoint |
 |---|---|---|
-| account-cell-type | `0x76ed462c0278e2d3f1413ae6ac254210fb72a8cb2f2c87a1d9d5f37d4e06cc27` | `0x57ed78e4…:0` |
+| account-cell-type | `0x11d8695e47f02b5cf96ae7cf5ab870bea08a04aa84231229b8989883220a352b` | `0xe3c20494…:0` |
 | account-lock | `0xa46c19f2262abc0d0db0de3952b7477792b36b392645e0f60e74637ae3e3f13b` | `0x968ec1a8…:1` |
-| sale-lock | `0xa8476c83a6752f9894871f780efcc9530d12e392973e9a3e468c4094c71de4d9` | `0x7b2c9f76…:0` |
+| sale-lock | `0x6858391c112dcea08e7a61d7a492fd948946cab0732dfddf39e67493f2734fd4` | `0x03507c8c…:0` |
 | price-cell-type | `0x238e74e1d2d5bf8f06f9f4b0bb352c2addd531351a45cfeddf3ff5f6f5662342` | `0xec7c0690…:0` |
 
 ## The road to real trust-minimization, honestly

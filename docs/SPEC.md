@@ -143,6 +143,21 @@ between 630 and 6,300, and nothing below, because the share has to be a cell and
 cannot hold less than its own bytes ([0012](decisions/0012-selling-a-name.md),
 [0025](decisions/0025-one-percent-on-a-sale.md)).
 
+## Consent
+
+An owner's consent is an input whose lock hash is the owner's (for `edit_records`, the
+manager's too; for a sub-name, the parent's owner), with three exceptions, all in
+`account-cell-type` (`consents`) and mirrored by the sale lock's seller branch
+(2026-09-27):
+
+- a lock anybody can spend gives nobody's consent: the anyone-can-pay lock, PW-Lock and
+  Omnilock in anyone-can-pay mode, by every type id they were deployed under and by the
+  data hash of their binaries (`lets_anyone_spend` in `cells-core`);
+- a deed's proxy lock opens for whoever spends the Spore, so it consents only when the
+  Spore is spent under a lock that consents itself, at most two proxies deep;
+- the sale lock opens for whoever pays the price, so it consents to the transfer alone;
+  any other action on a listed name needs the seller's own input too.
+
 ## Errors
 
 The exit codes the scripts return, from `cells-core`:
@@ -155,7 +170,7 @@ The exit codes the scripts return, from `cells-core`:
 | 25, 26 | `LinkedListBroken`, `DuplicateId` | the relink is wrong |
 | 27 | `StructuralDrift` | a field changed that the action does not allow |
 | 28 | `NotExpired` | recycling a name that is not past grace |
-| 29 | `Unauthorized` | no input under the owner, the manager, or the parent's owner |
+| 29 | `Unauthorized` | no input that gives the consent of the owner, the manager, or the parent's owner (see Consent) |
 | 30, 31 | `InvalidCharset`, `InvalidLength` | the label |
 | 35 | `InsufficientPrice` | less than the rent locked |
 | 36, 37, 47 | `CommitMissing`, `CommitTooYoung`, `CommitNotOwned` | the commit |

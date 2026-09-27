@@ -65,6 +65,42 @@ watching only it fail.
 These, and the rest of what this code taught, are written up with toy scripts and failing
 tests in [ckb-script-pitfalls](https://github.com/LusoCryptoLabs/ckb-script-pitfalls).
 
+## 2026-09-27: whose consent counts
+
+Two passes in one day, the second asked to find what the first left open. Every case is
+in `tests/tests/owner_consent.rs` and `tests/tests/consent_paths.rs`, red against the
+contracts as deployed (the mainnet binaries are kept in `tests/fixtures` for that), green
+after, with the honest case beside each.
+
+- **A lock anybody can spend gave the owner's consent.** `require_owner`,
+  `require_owner_or_manager`, the commit holder check and the sale lock's seller branch
+  took any input under the owner's lock hash as consent. Under the anyone-can-pay lock,
+  PW-Lock or Omnilock in anyone-can-pay mode a stranger can spend such a cell by handing
+  it back topped up, and so transfer the name, rewrite its records, mint sub-names, or take
+  a listed name unpaid. Nobody was exposed: no name and no listing on either network sat
+  under such a lock. Now `lets_anyone_spend` in `cells-core` refuses them, by every type id
+  they were deployed under and by the data hash of their binaries. It is a list of known
+  locks and no more: a new lock of this kind is refused nowhere until it is added, and the
+  SDK and app refuse such a lock as owner, manager, seller or holder before a name can
+  reach one.
+- **A deed's proxy lock looked one lock too shallow.** A name held as a deed (0036) is
+  owned by `input-type-proxy-lock` over a Spore, which opens for whoever spends the Spore.
+  The first fix judged the proxy lock and never asked what the Spore sat under. Now it
+  consents only when the Spore is spent under a lock that consents itself, at most two
+  proxies deep.
+- **Paying a listing bought any owner action.** The sale lock opens for whoever pays the
+  price, and `account-cell-type` took that as consent to anything: a payer could make
+  themselves manager, rewrite the records or mint a sub-name under a listed name instead
+  of taking it, for exactly the price of buying it. Low, since the seller is paid in full
+  and keeps the name; on mainnet as deployed. Now a sale-lock input consents to the
+  transfer alone; anything else on a listed name needs the seller's own input.
+- **A sale offer named by data hash.** The paid branch of the sale lock now requires
+  `hash_type: type`, closing a small fee leak.
+
+Sizes: `account-cell-type` 41,664 to 44,016 bytes, `sale-lock` 17,376 to 18,280. Live on
+Pudge since 2026-09-27 (in place, twice); mainnet's upgrade is announced ahead with the
+new hashes, as TRUST.md requires.
+
 ## What has not been looked at
 
 The `between` and `covers` arithmetic was checked in pass 6 and re-derived independently in

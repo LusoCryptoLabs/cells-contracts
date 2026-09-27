@@ -18,7 +18,6 @@ use ckb_testtool::ckb_types::{
     prelude::*,
 };
 use ckb_testtool::context::Context;
-use tests::Loader;
 
 const MAX_CYCLES: u64 = 100_000_000;
 /// The asking price in every fixture: 10,000 CKB. Above the floor the fee rate implies,
@@ -93,7 +92,7 @@ impl Case {
 
 fn run(c: Case) -> Result<u64, String> {
     let mut ctx = Context::default();
-    let sale_op = ctx.deploy_cell(Loader::default().load_binary("sale-lock"));
+    let sale_op = tests::deploy_sale_lock(&mut ctx);
     let plain_op = ctx.deploy_cell(ALWAYS_SUCCESS.clone());
 
     // Every script is built up front: `build_script` needs `&mut ctx`, so the
@@ -134,7 +133,7 @@ fn run(c: Case) -> Result<u64, String> {
                     Bytes::from(a)
                 }
             };
-            ctx.build_script_with_hash_type(&sale_op, ScriptHashType::Data1, args).expect("sale lock")
+            ctx.build_script(&sale_op, args).expect("sale lock")
         })
         .collect();
 
@@ -145,7 +144,7 @@ fn run(c: Case) -> Result<u64, String> {
         .map(|price| {
             let mut a = other_hash.to_vec();
             a.extend_from_slice(&price.to_le_bytes());
-            ctx.build_script_with_hash_type(&sale_op, ScriptHashType::Data1, Bytes::from(a)).expect("other sale lock")
+            ctx.build_script(&sale_op, Bytes::from(a)).expect("other sale lock")
         })
         .collect();
 

@@ -11,6 +11,9 @@ license = "MIT"
 # ckb-testtool is used by src/lib.rs (the Loader), so it is a normal dependency.
 [dependencies]
 ckb-testtool = "0.14"
+# The real secp256k1_blake160_sighash_all, already in the lock file through ckb-testtool,
+# for owner-consent controls that need a lock which refuses an unsigned spend.
+ckb-system-scripts = "0.5.4"
 
 [dev-dependencies]
 cells-core = { path = "../crates/cells-core" }

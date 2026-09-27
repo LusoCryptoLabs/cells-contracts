@@ -45,19 +45,13 @@ PRICE_DIR := target/$(TARGET)/release
 test:
 	$(CARGO) test -p cells-core
 	$(CARGO) build --release --target $(TARGET) -p price-cell-type
+# `account-cell-type` is also compiled against the sale lock's code hash (F-9). On chain
+# that is the sale lock's type id, and the harness gives the sale lock a fixed one
+# (tests/src/lib.rs), so the hash is known before anything is built and one pass does.
+# It used to be the data hash of the test build's own sale lock, which took two passes.
 	CELLS_TREASURY_LOCK_HASH=$$(cd tests && $(CARGO) run --quiet --bin treasury-hash) \
 	CELLS_PRICE_CELL_TYPE_HASH=$$(cd tests && $(CARGO) run --quiet --bin price-hash) \
-	  $(CARGO) build --release --target $(TARGET) --target-dir $(TEST_DIR)
-# Two passes, and the reason is a circle. `account-cell-type` is compiled against the
-# sale lock's code hash (F-9), and in a test that hash is the data hash of the sale-lock
-# binary the tests will load. That binary is the one in TEST_DIR, compiled with the
-# harness's own treasury hash, so its bytes differ from the deployable build and its hash
-# with them. So: build TEST_DIR once to produce the sale lock, hash THAT, and build again
-# with it. The second pass recompiles sale-lock from identical inputs, so the hash it was
-# given stays true.
-	CELLS_TREASURY_LOCK_HASH=$$(cd tests && $(CARGO) run --quiet --bin treasury-hash) \
-	CELLS_PRICE_CELL_TYPE_HASH=$$(cd tests && $(CARGO) run --quiet --bin price-hash) \
-	CELLS_SALE_LOCK_CODE_HASH=$$(cd tests && CELLS_CONTRACTS_DIR=../$(TEST_DIR)/$(TARGET)/release $(CARGO) run --quiet --bin sale-code-hash) \
+	CELLS_SALE_LOCK_CODE_HASH=$$(cd tests && $(CARGO) run --quiet --bin sale-code-hash) \
 	  $(CARGO) build --release --target $(TARGET) --target-dir $(TEST_DIR)
 	cd tests && CELLS_CONTRACTS_DIR=../$(TEST_DIR)/$(TARGET)/release CELLS_PRICE_DIR=../$(PRICE_DIR) $(CARGO) test
 

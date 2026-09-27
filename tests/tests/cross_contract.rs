@@ -53,7 +53,7 @@ const SALE_PRICE: u64 = 10_000 * CKB;
 fn renew_and_buy(treasury_out: u64) -> Result<u64, String> {
     let mut ctx = Context::default();
     let acct_op = ctx.deploy_cell(Loader::default().load_binary("account-cell-type"));
-    let sale_op = ctx.deploy_cell(Loader::default().load_binary("sale-lock"));
+    let sale_op = tests::deploy_sale_lock(&mut ctx);
     let plain_op = ctx.deploy_cell(ALWAYS_SUCCESS.clone());
 
     // The namespace: account-cell-type carries the genesis token's hash as its args.
@@ -92,7 +92,7 @@ fn renew_and_buy(treasury_out: u64) -> Result<u64, String> {
     // --- the name being sold ------------------------------------------------------
     let mut args = seller_lock.calc_script_hash().raw_data().to_vec();
     args.extend_from_slice(&SALE_PRICE.to_le_bytes());
-    let sale_lock = ctx.build_script_with_hash_type(&sale_op, ScriptHashType::Data1, Bytes::from(args)).expect("sale lock");
+    let sale_lock = ctx.build_script(&sale_op, Bytes::from(args)).expect("sale lock");
     let offer_in = ctx.create_cell(
         CellOutput::new_builder().capacity(OFFER_CAP.pack()).lock(sale_lock).build(),
         Bytes::from(seller_lock.as_slice().to_vec()),

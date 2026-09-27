@@ -11,7 +11,8 @@
 //!     included), so a stranger splicing in a new name cannot harm an owner.
 //!   * **Owner actions** (`edit_records`, `edit_manager`, `transfer`) require the
 //!     tx to spend a cell under the account's `owner_lock_hash`, auth delegated
-//!     to the owner's own wallet lock.
+//!     to the owner's own wallet lock, provided that lock needs the owner to sign
+//!     (an anyone-can-pay lock does not, see `speaks_for_owner`).
 //!   * **Genesis** must consume the one-time genesis-token (a type script can't see
 //!     global state, so that token is what makes a forged second root impossible,
 //!     SECURITY.md H-1).
@@ -29,12 +30,12 @@ use ckb_std::high_level::{
 };
 
 use cells_core::{
-    apply_price_factor, between, ckb_blake2b256, commitment, covers, parent_label, price_floor,
+    apply_price_factor, between, ckb_blake2b256, commitment, covers, lets_anyone_spend, parent_label, price_floor,
     NAMESPACE_LEN,
     parse_price_factor, referral_cut, registration_fee, sale_fee, validate_label, years_for_term, AccountData, Action, Error,
     COMMIT_MIN_DELAY,
     DATA_HEADER_LEN, PRICE_CELL_TYPE_HASH, PRICE_FACTOR_MAX, MAX_TERM_YEARS, MIN_TERM_YEARS, OWNER_HASH_LEN, ROOT_ID, ROOT_OWNER, SECONDS_PER_YEAR,
-    SALE_ARGS_LEN, SALE_LOCK_CODE_HASH, SECRET_LEN, TREASURY_LOCK_HASH,
+    HASH_TYPE_TYPE, SALE_ARGS_LEN, SALE_LOCK_CODE_HASH, SECRET_LEN, TREASURY_LOCK_HASH,
 };
 
 ckb_std::entry!(program_entry);
@@ -294,7 +295,7 @@ fn validate_register(inputs: &[Cell], outputs: &[Cell]) -> Result<(), Error> {
     if let Some(parent) = parent_label(x.account()) {
         let pdata = require_parent(parent)?;
         let p = AccountData::parse(&pdata)?;
-        require_owner(p.owner_lock_hash())?;
+        require_owner(p.owner_lock_hash(), false)?;
         // A sub-name must not outlive the parent that authorized it, or the parent
         // could lapse and be recycled while its children kept resolving.
         if x.expired_at() > p.expired_at() {
@@ -399,8 +400,10 @@ fn referral_discount(cut: u64) -> Result<u64, Error> {
 }
 
 /// Does any input in this transaction sit under `lock_hash`? Spending a cell is the
-/// only way to prove control of a lock, which is why `require_owner` asks the same
-/// question; here the answer disqualifies rather than authorizes.
+/// only way to prove control of a lock, which is why `require_owner` asks nearly the same
+/// question; here the answer disqualifies rather than authorizes, so an input under an
+/// anyone-can-pay lock counts too. It can only cost the inviter a cut that whoever builds
+/// the registration could withhold anyway, by leaving the inviter out.
 fn signed_by(lock_hash: &[u8]) -> bool {
     QueryIter::new(load_cell_lock_hash, Source::Input).any(|h| h[..OWNER_HASH_LEN] == *lock_hash)
 }
@@ -460,10 +463,17 @@ fn paid_to(lock_hash: &[u8]) -> Result<u64, Error> {
 /// transaction would otherwise be paid once for two obligations.
 ///
 /// **The cancellation exemption is mirrored, not guessed.** `sale-lock` demands nothing for
-/// an offer whose seller has an input here, because that seller is cancelling or relisting
-/// rather than selling (P7-2). Adding a fee for those would refuse an honest batch, so the
-/// same predicate is applied. It is duplicated logic and that is a real cost; the test
-/// `a_cancellation_beside_a_registration_owes_no_sale_fee` is what keeps the two in step.
+/// an offer whose seller has an input here that speaks for them, because that seller is
+/// cancelling or relisting rather than selling (P7-2). Adding a fee for those would refuse
+/// an honest batch, so the same predicate is applied. It is duplicated logic and that is a
+/// real cost; the tests `a_cancellation_beside_a_registration_owes_no_sale_fee` and
+/// `a_seller_input_anyone_can_spend_is_not_a_cancellation_and_the_sale_owes_its_fee` are
+/// what keep the two in step.
+///
+/// An offer counts only as the sale lock the chain runs: this code hash under
+/// `hash_type: type`, the only form in which `sale-lock` sells. The same binary named by
+/// its data hash used to sell too and was not counted here, so one treasury output
+/// answered its fee and this action's; `sale-lock` now refuses to sell it.
 fn owed_by_sales(to_lock: Option<&[u8]>) -> Result<(u64, u64), Error> {
     // An all-zero code hash is a namespace deployed without a sale lock: no real lock can
     // hash to it, so the scan would find nothing. Skipping it saves the walk entirely.
@@ -477,7 +487,11 @@ fn owed_by_sales(to_lock: Option<&[u8]>) -> Result<(u64, u64), Error> {
         match load_cell_lock(i, Source::Input) {
             Ok(lock) => {
                 let args = lock.args().raw_data();
-                if lock.code_hash().as_slice() == SALE_LOCK_CODE_HASH && args.len() == SALE_ARGS_LEN {
+                let hash_type: u8 = lock.hash_type().into();
+                if lock.code_hash().as_slice() == SALE_LOCK_CODE_HASH
+                    && hash_type == HASH_TYPE_TYPE
+                    && args.len() == SALE_ARGS_LEN
+                {
                     let seller: [u8; 32] = args[..32].try_into().map_err(|_| Error::Encoding)?;
                     // The seller is here, so this offer is being cancelled and owes nothing.
                     if !any_input_under(&seller)? {
@@ -503,14 +517,15 @@ fn owed_by_sales(to_lock: Option<&[u8]>) -> Result<(u64, u64), Error> {
     }
 }
 
-/// Is any input in this transaction locked by `hash`? The sale lock's own test for a
-/// seller who is present, repeated here for the same reason and with the same meaning.
+/// Is any input in this transaction locked by `hash`, under a lock that speaks for its
+/// owner? The sale lock's own test for a seller who is present, repeated here for the
+/// same reason and with the same meaning.
 fn any_input_under(hash: &[u8; 32]) -> Result<bool, Error> {
     let mut i = 0usize;
     loop {
         match load_cell_lock_hash(i, Source::Input) {
             Ok(h) => {
-                if &h == hash {
+                if &h == hash && speaks_for_owner(i)? {
                     return Ok(true);
                 }
                 i += 1;
@@ -603,12 +618,16 @@ fn require_commit(x: &AccountData, x_index: usize) -> Result<usize, Error> {
             // read the secret out of the victim's broadcast reveal and land the
             // registration first. The name still went to the committed owner, but the
             // front-runner chose everything else about it. Binding the holder makes a
-            // copied commitment worthless: they cannot produce a cell under the
-            // victim's lock. Honest clients already pay the CommitCell to themselves,
-            // so this costs them nothing.
+            // copied commitment worthless: they cannot spend a cell under the victim's
+            // lock. Honest clients already pay the CommitCell to themselves, so this
+            // costs them nothing.
+            //
+            // And under a lock that needs that owner to sign. Anybody can send a cell to an
+            // anyone-can-pay lock and spend it again by handing its capacity back, so a
+            // copied commitment parked under such an owner's lock passed the check above.
             Ok(data) if data.as_slice() == want => {
                 let holder = load_cell_lock_hash(i, Source::Input).map_err(|_| Error::Encoding)?;
-                if holder[..OWNER_HASH_LEN] != *x.owner_lock_hash() {
+                if holder[..OWNER_HASH_LEN] != *x.owner_lock_hash() || !consents(i, true, 0)? {
                     return Err(Error::CommitNotOwned);
                 }
                 check_commit_since(i)?;
@@ -721,7 +740,7 @@ fn validate_set_manager(inputs: &[Cell], outputs: &[Cell]) -> Result<(), Error> 
     // every passer-by would have become an editor.
     reject_cell_lock_authority(o.manager_lock_hash(), &lock_hash(co, Source::Output)?)?;
     capacity_not_reduced(ci, co)?;
-    require_owner(i.owner_lock_hash())
+    require_owner(i.owner_lock_hash(), false)
 }
 
 /// Transfer: the only action that may change `owner_lock_hash` (hand the name to a
@@ -766,7 +785,7 @@ fn validate_transfer(inputs: &[Cell], outputs: &[Cell]) -> Result<(), Error> {
     if o.manager_lock_hash() != o.owner_lock_hash() {
         return Err(Error::StructuralDrift);
     }
-    require_owner(i.owner_lock_hash())
+    require_owner(i.owner_lock_hash(), true)
 }
 
 /// Renew: only `expired_at` grows; everything else (owner, cell lock, witness)
@@ -824,7 +843,7 @@ fn validate_renew(inputs: &[Cell], outputs: &[Cell]) -> Result<(), Error> {
         if o.expired_at() > p.expired_at() {
             return Err(Error::ParentOutlived);
         }
-        require_owner(p.owner_lock_hash())?;
+        require_owner(p.owner_lock_hash(), false)?;
     }
     Ok(())
 }
@@ -998,24 +1017,86 @@ fn require_parent(parent: &[u8]) -> Result<Vec<u8>, Error> {
     }
 }
 
+/// Does input `i` speak for whoever holds its lock?
+///
+/// Spending a cell proves control of its lock only when that lock needs its holder to
+/// sign. Under an anyone-can-pay lock a stranger may spend the holder's cell with no key
+/// by handing it back topped up, and a script cannot tell that from the holder's own
+/// spend. So an input under such a lock speaks for nobody: not as owner, manager, commit
+/// holder or present seller. cells-core `lets_anyone_spend` says which locks those are,
+/// and which it does not know.
+fn speaks_for_owner(i: usize) -> Result<bool, Error> {
+    let lock = load_cell_lock(i, Source::Input).map_err(|_| Error::Encoding)?;
+    Ok(!lets_anyone_spend(lock.code_hash().as_slice(), &lock.args().raw_data()))
+}
+
+/// `input-type-proxy-lock`, named by data hash (`data1`) as every deed names it (0036).
+const INPUT_TYPE_PROXY_LOCK: [u8; 32] = [
+    0x51, 0x23, 0x90, 0x89, 0x65, 0xc7, 0x11, 0xb0, 0xff, 0xd8, 0xae, 0xc6, 0x42, 0xf1, 0xed, 0xe3,
+    0x29, 0x64, 0x9b, 0xda, 0x1e, 0xbd, 0xca, 0x6b, 0xd2, 0x41, 0x24, 0xd3, 0x79, 0x6f, 0x76, 0x8a,
+];
+
+/// Does input `i` give the consent of whoever holds its lock to an owner act?
+///
+/// `speaks_for_owner`, and two locks that open for somebody other than their holder. A
+/// deed's proxy lock opens for whoever spends the deed, so it speaks only when a cell of
+/// the type in its args is spent under a lock that speaks, at most two proxies down. The
+/// sale lock opens for whoever pays, and the price buys the name: any act other than the
+/// transfer needs the seller here.
+fn consents(i: usize, transfer: bool, depth: u8) -> Result<bool, Error> {
+    let lock = load_cell_lock(i, Source::Input).map_err(|_| Error::Encoding)?;
+    let args = lock.args().raw_data();
+    let hash_type: u8 = lock.hash_type().into();
+    if lets_anyone_spend(lock.code_hash().as_slice(), &args) {
+        return Ok(false);
+    }
+    if lock.code_hash().as_slice() == SALE_LOCK_CODE_HASH && hash_type == HASH_TYPE_TYPE && args.len() == SALE_ARGS_LEN {
+        let seller: [u8; 32] = args[..32].try_into().map_err(|_| Error::Encoding)?;
+        return Ok(transfer || any_input_under(&seller)?);
+    }
+    if lock.code_hash().as_slice() != INPUT_TYPE_PROXY_LOCK || hash_type == HASH_TYPE_TYPE || args.len() < 32 {
+        return Ok(true);
+    }
+    if depth >= 2 {
+        return Ok(false);
+    }
+    let mut j = 0usize;
+    loop {
+        match load_cell_type_hash(j, Source::Input) {
+            Ok(Some(h)) if h[..] == args[..32] && consents(j, transfer, depth + 1)? => return Ok(true),
+            Ok(_) => j += 1,
+            Err(SysError::IndexOutOfBound) => return Ok(false),
+            Err(_) => return Err(Error::Encoding),
+        }
+    }
+}
+
 /// Owner authorization: the tx must spend at least one cell whose lock hash equals
-/// the account's `owner_lock_hash` (auth delegated to the owner's wallet lock).
-fn require_owner(owner_lock_hash: &[u8]) -> Result<(), Error> {
+/// the account's `owner_lock_hash` (auth delegated to the owner's wallet lock), under a
+/// lock that gives the owner's consent to this act (`consents`).
+fn require_owner(owner_lock_hash: &[u8], transfer: bool) -> Result<(), Error> {
+    let mut i = 0usize;
     for h in QueryIter::new(load_cell_lock_hash, Source::Input) {
-        if h[..OWNER_HASH_LEN] == *owner_lock_hash {
+        if h[..OWNER_HASH_LEN] == *owner_lock_hash && consents(i, transfer, 0)? {
             return Ok(());
         }
+        i += 1;
     }
     Err(Error::Unauthorized)
 }
 
 /// Edit authorization: the tx must spend a cell under **either** the owner's or the
-/// manager's lock. The manager (a v2 delegate) may edit records but nothing else.
+/// manager's lock, one that speaks for them. The manager (a v2 delegate) may edit
+/// records but nothing else.
 fn require_owner_or_manager(owner_lock_hash: &[u8], manager_lock_hash: &[u8]) -> Result<(), Error> {
+    let mut i = 0usize;
     for h in QueryIter::new(load_cell_lock_hash, Source::Input) {
-        if h[..OWNER_HASH_LEN] == *owner_lock_hash || h[..OWNER_HASH_LEN] == *manager_lock_hash {
+        if (h[..OWNER_HASH_LEN] == *owner_lock_hash || h[..OWNER_HASH_LEN] == *manager_lock_hash)
+            && consents(i, false, 0)?
+        {
             return Ok(());
         }
+        i += 1;
     }
     Err(Error::Unauthorized)
 }

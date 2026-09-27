@@ -26,7 +26,6 @@
 use ckb_testtool::builtin::ALWAYS_SUCCESS;
 use ckb_testtool::ckb_types::{bytes::Bytes, core::ScriptHashType, core::TransactionBuilder, packed::*, prelude::*};
 use ckb_testtool::context::Context;
-use tests::Loader;
 
 const MAX_CYCLES: u64 = 100_000_000;
 const CKB: u64 = 100_000_000;
@@ -55,7 +54,7 @@ const OFFSETS: [i64; 5] = [-(100 * CKB as i64), -1, 0, 1, 100 * CKB as i64];
 /// amounts. Returns whether the deployed lock accepted it.
 fn purchase(price: u64, to_seller: u64, to_treasury: u64) -> bool {
     let mut ctx = Context::default();
-    let sale_op = ctx.deploy_cell(Loader::default().load_binary("sale-lock"));
+    let sale_op = tests::deploy_sale_lock(&mut ctx);
     let plain_op = ctx.deploy_cell(ALWAYS_SUCCESS.clone());
 
     let seller_lock = ctx.build_script(&plain_op, Bytes::from_static(b"seller")).expect("seller");
@@ -68,9 +67,7 @@ fn purchase(price: u64, to_seller: u64, to_treasury: u64) -> bool {
 
     let mut args = seller_lock.calc_script_hash().raw_data().to_vec();
     args.extend_from_slice(&price.to_le_bytes());
-    let sale_lock = ctx
-        .build_script_with_hash_type(&sale_op, ScriptHashType::Data1, Bytes::from(args))
-        .expect("sale script");
+    let sale_lock = ctx.build_script(&sale_op, Bytes::from(args)).expect("sale script");
 
     // The offer cell carries the seller's lock script in its data so a buyer can pay them.
     let offer_out = ctx.create_cell(
