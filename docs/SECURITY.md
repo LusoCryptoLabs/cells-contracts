@@ -98,8 +98,23 @@ after, with the honest case beside each.
   `hash_type: type`, closing a small fee leak.
 
 Sizes: `account-cell-type` 41,664 to 44,016 bytes, `sale-lock` 17,376 to 18,280. Live on
-Pudge since 2026-09-27 (in place, twice); mainnet's upgrade is announced ahead with the
-new hashes, as TRUST.md requires.
+Pudge since 2026-09-27 (in place, twice).
+
+### The mainnet upgrade, announced 2026-09-27
+
+In place, by type id, so the code hashes and every name stay as they are. Not before
+2026-09-28 at 21:00 UTC. The binaries this source builds with the three values in the
+README, and what the two code cells will hold:
+
+| contract | bytes | data hash |
+|---|---|---|
+| account-cell-type | 44,016 | `0x99ea60a4369ed3d596338b66d6818710a1d047758f478dd854dd814b786aa088` |
+| sale-lock | 18,280 | `0x57cdfaa46bc62012315f7c64719f01b43accb66bfc091183a751d59309da3068` |
+
+`account-lock` and `price-cell-type` do not change. Until then, and after, `cellula.id/api/verify`
+compares what the chain holds with the hashes the resolver was built with; it reads `false`
+while the two disagree and `true` once the resolver follows. TRUST.md's mainnet table is
+updated when the cells are.
 
 ## What has not been looked at
 
