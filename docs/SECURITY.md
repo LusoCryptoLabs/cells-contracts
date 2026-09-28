@@ -125,7 +125,14 @@ cell of a ring to the contract as predecessor, and every pair for recycle, again
 that sorts and never calls either function, and five deliberately broken copies of the
 contract fail it. Genesis runs once because the genesis transaction destroys its type-id
 token, which the contract does not itself check; on both networks it did. Sub-name and
-commit griefing economics were first modelled on 2026-09-27; that note is not public yet.
+commit griefing economics were modelled on 2026-09-27 and one limit is known: a registration
+spends the cell of the name just below it in the ring, so whoever can spend that cell can
+invalidate a pending registration, and could in principle keep doing so until a commitment
+of their own to the revealed label is sixty seconds old. In one run on Pudge the first
+replacement was accepted and the registration was still committed 38 s after it was sent;
+holding one back needs a replacement accepted before each reveal is proposed, with confirmed
+coins every round. Accepted as a limit; what removes it is keeping records and expiry out of
+the ring cell, a two-contract change, planned only when volume asks for it.
 Of the functions the tests take expected values from, only `registration_fee` and
 `sale_fee` compute what the contract enforces, and both are pinned by hand-written figures
 at every step. And the wallet locks a name's owner chooses have not been reviewed as code:
