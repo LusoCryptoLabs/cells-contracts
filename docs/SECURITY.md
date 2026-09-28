@@ -116,6 +116,11 @@ compares what the chain holds with the hashes the resolver was built with; it re
 while the two disagree and `true` once the resolver follows. TRUST.md's mainnet table is
 updated when the cells are.
 
+Landed on 2026-09-28: `account-cell-type` in tx
+`0x3072417e797a39a6ead341947dae3350b47a1b7d6571b326d3d7f8fe7677bf0b` (block 20,583,638, 21:00:30
+UTC), `sale-lock` in tx `0x020f7f9e5607a8e7d1e94d4c1f3d5c52c204d2f53fb097f43ce7f524d2edcabb`
+(block 20,583,642, 21:01:17 UTC). Both code cells hold the bytes above.
+
 ## What has not been looked at
 
 The `between` and `covers` arithmetic was checked in pass 6, re-derived independently in
