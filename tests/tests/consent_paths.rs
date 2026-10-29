@@ -56,8 +56,9 @@ const SELLER: u8 = 0x0D;
 
 /// `input-type-proxy-lock`, `data1`, the code hash every deed names (decision 0036).
 const PROXY_CODE_HASH: &str = "5123908965c711b0ffd8aec642f1ede329649bda1ebdca6bd24124d3796f768a";
-/// The contracts live on mainnet today, read from chain on 2026-09-27 (dep outpoints
-/// `0xe9122f59…:0` and `0x192db7b6…:0`), and the sale lock's code cell's type id args.
+/// The contracts live on mainnet until the upgrade of 2026-09-28, read from chain on
+/// 2026-09-27 (dep outpoints `0xe9122f59…:0` and `0x192db7b6…:0`), and the sale lock's code
+/// cell's type id args.
 const MAINNET_ACCOUNT_DATA_HASH: &str = "f86bdba9ff22b5018dcb90a22cdb3720cd5ea8868ab94959ac8146a6789aae30";
 const MAINNET_SALE_DATA_HASH: &str = "f1160f64a82e3509211b2903fc54f9f15cbdc4758d058f107608d30727072a93";
 const MAINNET_SALE_TYPE_ID_ARGS: &str = "05238ca98c4bc67cb6592707ba40301141344b53687f73d73f702f0cc2d7985f";

@@ -28,13 +28,14 @@ CELLS_PRICE_CELL_TYPE_HASH=3f1c9a47d666bd0b5f9a4b2b3afd7c20216280dbcfaddd1374878
 make build
 ```
 
-The CKB hash of each result, against the code cell on chain, checked 2026-09-23:
+The CKB hash of each result, against the code cell on chain, checked 2026-10-29
+(`account-cell-type` and `sale-lock` since the upgrade of 2026-09-28, docs/SECURITY.md):
 
 | | data hash on chain | bytes |
 |---|---|---|
-| `account-cell-type` | `0xf86bdba9ff22b5018dcb90a22cdb3720cd5ea8868ab94959ac8146a6789aae30` | 41,664 |
+| `account-cell-type` | `0x99ea60a4369ed3d596338b66d6818710a1d047758f478dd854dd814b786aa088` | 44,016 |
 | `account-lock` | `0xa46c19f2262abc0d0db0de3952b7477792b36b392645e0f60e74637ae3e3f13b` | 1,152 |
-| `sale-lock` | `0xf1160f64a82e3509211b2903fc54f9f15cbdc4758d058f107608d30727072a93` | 17,376 |
+| `sale-lock` | `0x57cdfaa46bc62012315f7c64719f01b43accb66bfc091183a751d59309da3068` | 18,280 |
 | `price-cell-type` | `0x238e74e1d2d5bf8f06f9f4b0bb352c2addd531351a45cfeddf3ff5f6f5662342` | 22,984 |
 
 `https://cellula.id/api/verify` makes the same comparison live and answers `verified:
