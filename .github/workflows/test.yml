@@ -37,7 +37,9 @@ jobs:
         run: make test
 
   reproduce-mainnet:
-    runs-on: ubuntu-latest
+    # Ubuntu 24.04, whose gcc-riscv64-unknown-elf is the 13.2.0 the mainnet binaries were
+    # built with. ubuntu-latest moved to 26.04 and its 14.2.0 builds other bytes.
+    runs-on: ubuntu-24.04
     # No CC override here on purpose: the mainnet binaries were built with the GNU RISC-V
     # toolchain, and cc-rs picks it up by itself once it is installed.
     steps:
