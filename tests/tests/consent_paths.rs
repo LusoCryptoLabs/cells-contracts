@@ -190,9 +190,9 @@ enum Holder {
 enum Build {
     /// The test build of this checkout (`make test`).
     Test,
-    /// The binaries live on mainnet today, checked by data hash, with the sale lock under
-    /// its mainnet type id and the fee paid to the mainnet treasury lock. They predate the
-    /// 2026-09-27 upgrade.
+    /// The binaries that ran on mainnet until the upgrade of 2026-09-28, checked by data
+    /// hash, with the sale lock under its mainnet type id and the fee paid to the mainnet
+    /// treasury lock.
     Mainnet,
 }
 
@@ -642,9 +642,11 @@ fn a_seller_who_is_here_still_manages_a_listed_name() {
     }
 }
 
-/// The same three, against the contracts live on mainnet today.
+/// The same three, against the binaries that ran on mainnet until 2026-09-28. A
+/// reproduction, not a guard: on them paying a listing bought any one owner action, and
+/// the upgrade of 2026-09-28 closed it (docs/SECURITY.md).
 #[test]
-#[ignore = "open on mainnet as deployed: paying a listing buys any one owner action, not only the transfer"]
+#[ignore = "reproduces the hole in the builds on mainnet until 2026-09-28, closed by the upgrade: paying a listing bought any one owner action, not only the transfer"]
 fn on_mainnet_as_deployed_paying_a_listing_buys_one_owner_action() {
     let results = [
         ("pay the listing in full, set yourself as manager, leave it listed", pay_a_listing_and(Build::Mainnet, b"edit_manager", true)),

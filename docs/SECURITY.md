@@ -69,8 +69,8 @@ tests in [ckb-script-pitfalls](https://github.com/LusoCryptoLabs/ckb-script-pitf
 
 Two passes in one day, the second asked to find what the first left open. Every case is
 in `tests/tests/owner_consent.rs` and `tests/tests/consent_paths.rs`, red against the
-contracts as deployed (the mainnet binaries are kept in `tests/fixtures` for that), green
-after, with the honest case beside each.
+contracts as deployed then (the builds that ran on mainnet until 2026-09-28 are kept in
+`tests/fixtures` for that), green after, with the honest case beside each.
 
 - **A lock anybody can spend gave the owner's consent.** `require_owner`,
   `require_owner_or_manager`, the commit holder check and the sale lock's seller branch
@@ -92,8 +92,9 @@ after, with the honest case beside each.
   price, and `account-cell-type` took that as consent to anything: a payer could make
   themselves manager, rewrite the records or mint a sub-name under a listed name instead
   of taking it, for exactly the price of buying it. Low, since the seller is paid in full
-  and keeps the name; on mainnet as deployed. Now a sale-lock input consents to the
-  transfer alone; anything else on a listed name needs the seller's own input.
+  and keeps the name; open on mainnet until the upgrade of 2026-09-28 closed it. Now a
+  sale-lock input consents to the transfer alone; anything else on a listed name needs the
+  seller's own input.
 - **A sale offer named by data hash.** The paid branch of the sale lock now requires
   `hash_type: type`, closing a small fee leak.
 
@@ -119,7 +120,10 @@ updated when the cells are.
 Landed on 2026-09-28: `account-cell-type` in tx
 `0x3072417e797a39a6ead341947dae3350b47a1b7d6571b326d3d7f8fe7677bf0b` (block 20,583,638, 21:00:30
 UTC), `sale-lock` in tx `0x020f7f9e5607a8e7d1e94d4c1f3d5c52c204d2f53fb097f43ce7f524d2edcabb`
-(block 20,583,642, 21:01:17 UTC). Both code cells hold the bytes above.
+(block 20,583,642, 21:01:17 UTC). Both code cells hold the bytes above, so the fixes of
+2026-09-27 are live on mainnet. The builds before the upgrade (`0xf86bdba9…`,
+`0xf1160f64…`) stay in `tests/fixtures`; an ignored test in `consent_paths.rs` still
+reproduces the listing hole against them.
 
 ## What has not been looked at
 
