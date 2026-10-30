@@ -211,11 +211,11 @@ pub const SALE_FEE_PERCENT: u64 = 1;
 
 /// The smallest a cell under the treasury's lock may be, in shannons.
 ///
-/// CKB makes every cell hold at least its own bytes. The testnet treasury, a JoyID lock
-/// with 22-byte args, occupies 63 (8 capacity, 32 code hash, 1 hash type, 22 args); the
-/// mainnet one, `secp256k1_blake160` with 20-byte args, 61, and 63 covers both. It is here
-/// because the contract knows the treasury only by its hash and cannot measure the script;
-/// `sdk/test/treasury-floor.test.ts` measures the real lock and fails if 63 stops covering it.
+/// Not a policy either: CKB makes every cell hold at least its own bytes, and this lock
+/// occupies 63 of them (8 capacity, 32 code hash, 1 hash type, 22 args). It is written
+/// here because the contract knows the treasury only by its hash and cannot measure the
+/// script; `sdk/test/treasury-floor.test.ts` measures the real lock and fails if this
+/// number stops matching it.
 pub const TREASURY_MIN_SHANNONS: u64 = 63 * 100_000_000;
 
 /// The most of a sale the protocol will ever take, in percent, which is what decides
@@ -558,9 +558,9 @@ pub const PRICE_DATA_VERSION: u8 = 1;
 pub const PRICE_DATA_LEN: usize = 5;
 /// No discount: the schedule as written.
 pub const PRICE_FACTOR_MAX: u32 = 10_000;
-/// 63 CKB on the 5+ line. A treasury output holds its lock's bytes: 8 + 33 + 22 = 63 CKB for
-/// the testnet JoyID lock (22-byte args), 61 for mainnet's `secp256k1_blake160` (20). Any
-/// smaller and the fee output cannot exist, so registration bricks itself (0014). 5 000 CKB x 126 / 10 000.
+/// 63 CKB on the 5+ line. The treasury is a JoyID lock with 22-byte args, so the
+/// smallest output it can hold is 8 + 33 + 22 = 63 CKB; below that the fee output is
+/// unconstructible and registration bricks itself (0014). 5 000 CKB x 126 / 10 000.
 pub const PRICE_FACTOR_MIN: u32 = 126;
 /// A price cell may change at most once every six hours, enforced by `since` on its
 /// input. It was a day, with a quarter per move; six hours with a sixteenth per move
