@@ -32,7 +32,7 @@ sale would be a larger share than we would defend anywhere. The two upper bands 
 ## Why
 
 Ten percent was never argued, it was assumed, and it survived until there was something
-to compare it against. the competition notes (kept with the application, not in this repository) put the number beside `.bit`,
+to compare it against. The competition notes (kept with the application, not in this repository) put the number beside `.bit`,
 the naming service that has run on this same chain for years: **about 0.03%.**
 
 At ten percent the marketplace we built is the wrong place to sell a name. A seller with
@@ -123,10 +123,10 @@ checking the fee alone by hand was the smallest possible version of it. The cont
 authority, because it is what the chain enforces, and an expression the parser cannot read
 fails the test rather than being skipped.
 
-**A comment changed a contract, which was already known.** the deployment runbook (kept with the application, not in this repository) 3c
-has described this since 2026-09-12: panic locations bake source line numbers into the
+**A comment changed a contract, which was already known.** Section 3c of the deployment runbook
+(kept with the application, not in this repository) has described this since 2026-09-12: panic locations bake source line numbers into the
 binary, so moving a line in `cells-core` changes every contract compiled against it.
-a script (kept with the application, not in this repository) already answers **MOVED** rather than MISMATCH for it and prints the
+The comparison script (kept with the application, not in this repository) already answers **MOVED** rather than MISMATCH for it and prints the
 byte count; on the day it was two bytes, at `0xdc0` and `0xdd8`, and it was read as an
 alarm only because the output was grepped for the words MATCH and MISMATCH.
 

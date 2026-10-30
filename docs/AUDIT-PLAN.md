@@ -1,7 +1,7 @@
 # Cells: adversarial review plan (pass 5)
 
-The brief for the next internal security pass on the contracts. the original audit brief (since retired) is
-the scope package for an external auditor and [the security journal](SECURITY-JOURNAL.md) is the record
+The brief for the next internal security pass on the contracts. The original audit brief (since retired) was
+the scope package for an external auditor, and [the security journal](SECURITY-JOURNAL.md) is the record
 of what four previous passes found. This is neither: it is an attack plan, written to
 find what those four could not.
 
@@ -21,7 +21,7 @@ Four things that method structurally cannot see, and which this pass exists to c
    `require_treasury`, `signed_by` and `require_owner` all read the *whole* transaction,
    not just their own group's cells. Value counted by two groups from one output is the
    exact class that bit the sale lock twice already.
-2. **Assumptions shared by the code and its tests.** the original audit brief (since retired) admits this
+2. **Assumptions shared by the code and its tests.** The original audit brief (since retired) admits this
    happened once: the property test "hard-codes the assumption the contract failed to
    enforce". A test written from the same mental model as the code cannot falsify that
    model. This pass must read the tests looking for agreement, not coverage.

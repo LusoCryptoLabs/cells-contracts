@@ -59,11 +59,11 @@ true and says so.
 3. **Proof** (a script (kept with the application, not in this repository)): the same in-place respend of
    `account-lock` signed by one key, refused by the chain (`Inputs[0].Lock` validation
    failure); signed by two, landed (`0x501c9b77…`). Same bytes, so
-   a script (kept with the application, not in this repository) still MATCHes and only `lock.dep` moved.
+   the comparison with the chain still MATCHes and only `lock.dep` moved.
 
 `deployment.json` now carries `upgradeLock` (kind, m, n, address, lock hash, the three
-public key hashes, the handover tx), and every upgrade script signs through
-a script (kept with the application, not in this repository) when it is present, or with the single key when it is not, so the same
+public key hashes, the handover tx), and every upgrade script signs with the multisig
+when `upgradeLock` is present, or with the single key when it is not, so the same
 scripts serve both a fresh single-key testnet and this one.
 
 ## What changes for operations
@@ -75,12 +75,12 @@ scripts serve both a fresh single-key testnet and this one.
   transaction; today that is one machine, on mainnet it is a signing round.
 - Fees for upgrades come from cells under the multisig, not from any personal key. Keep
   it funded; the watchtower's `cells-upgrade-wallet` watch now points at it.
-- Everything in the deployment runbook (kept with the application, not in this repository) sections B, C and D is unchanged except which lock signs.
+- Everything in sections B, C and D of the deployment runbook (kept with the application, not in this repository) is unchanged except which lock signs.
 
 ## What stays open
 
 Real holders (the mainnet question). The move to a post-quantum multisig
 ([0016](0016-post-quantum-owner.md)) before 2030, which the SPHINCS+ lock supports
 natively and which will be the same handover shape as step 2 above, with a different
-a script (kept with the application, not in this repository). And the price cell's key, which is deliberately not this key and
+signing script (kept with the application, not in this repository). And the price cell's key, which is deliberately not this key and
 deliberately not a multisig: it can only move a discount a sixteenth every six hours.

@@ -235,7 +235,7 @@ show it.
 ## Pass 6, 2026-09-11 (a fresh pass, ahead of publishing the contracts)
 
 Run by a reviewer with no memory of the earlier passes, against the full scope in
-the original audit brief (since retired), with `the security journal` read first so nothing above was re-reported.
+the original audit brief (since retired), with the security journal read first so nothing above was re-reported.
 Two findings, both reproduced against the deployed binary before they were touched,
 both fixed in the same in-place upgrade; two design notes; three documentation defects
 corrected. Suite now 86 VM tests in `account_cell` (was 84).
@@ -374,7 +374,7 @@ This was found by asking a different question: **who checks the thing that tells
 where to send money?**
 
 `/resolve` returned addresses, records, owner and expiry, and **no outpoint, no
-transaction, no block, no hash, no signature**. the resolver notes (kept with the application, not in this repository) said any answer
+transaction, no block, no hash, no signature**. The resolver notes (kept with the application, not in this repository) said any answer
 could be checked against the chain without the resolver or any code of ours, and that was
 true of the **name** and false of the **answer**: nothing in the reply said which cell it
 came from, so checking it meant redoing the whole lookup, which is what a caller came here
@@ -525,7 +525,7 @@ witnesses with the TypeScript codec, which already refuses.
 The Rust encoder does have callers outside the tests, and an earlier draft of this
 finding was wrong to say it did not: the off-chain registrar (not in this repository) (`register.rs`, `fixtures.rs`,
 `lib.rs`) and the off-chain indexer (not in this repository) all call `build_account`. Neither is deployed
-(`the architecture notes (kept with the application, not in this repository)` says so in as many words), and more to the point the records they
+(the architecture notes, kept with the application and not in this repository, say so in as many words), and more to the point the records they
 build are hard-coded constants, a `address.60` key with a `demo` label and twenty bytes
 of value. Nothing a caller supplies reaches a length prefix: the only user input on that
 path is the label, which is the name itself and goes through `validate_label`. So the
@@ -539,7 +539,7 @@ somebody trusting them. They now say what the code does and point here. The edit
 the line count, and that was measured rather than assumed: the four contracts were built
 twice from the unchanged source (byte-identical, so the build is deterministic and the
 comparison means something) and once after the edit, with every crate recompiling each
-time, and all four hashes came out the same. a script (kept with the application, not in this repository), run afterwards,
+time, and all four hashes came out the same. A comparison script (kept with the application, not in this repository), run afterwards,
 reports MATCH for all four code cells. Nothing on chain moved.
 
 **The code fix, deliberately not applied:** make `push_u8_len`/`push_u16_len` return
@@ -549,7 +549,7 @@ and the off-chain indexer (not in this repository) and eleven in the contract te
 should leave the binaries identical too, but every edit to `cells-core` is a chance to
 make a mistake in the crate all four contracts link, and the only path this closes is one
 nobody can reach. The trigger is **not** the registrar going live, because it never will:
-`the architecture notes (kept with the application, not in this repository)` section 7 keeps it as a second implementation of the encoding and
+section 7 of the architecture notes (kept with the application, not in this repository) keeps it as a second implementation of the encoding and
 nothing more, which is also the sharpest way to say what F-10 is, the one place where
 that second implementation disagrees with the first. The trigger is the next change to
 `cells-core` that is worth an upgrade on its own; this travels with it.
@@ -708,7 +708,7 @@ cells every few minutes and publishes it at `/api/health`.
 computed, published, and looked at by nobody. "We can notice" was half true: we could have
 noticed, and nothing would have.
 
-a proof script (kept with the application, not in this repository), installed as `cells-sentinel.timer`, reads it every thirty
+A script (kept with the application, not in this repository), installed as `cells-sentinel.timer`, reads it every thirty
 minutes along with the quantum lock, the price cell, the shop and the app, and emails
 through the same channel the machine already uses. It reports differences and does not
 judge them.
@@ -799,14 +799,14 @@ with the chain's and the resolver's own boundaries (`name-state.test.ts` pins bo
 
 ### P9-2 (Medium, operational, **fixed and installed**): nothing remembered the names we must keep
 
-RESERVED.md and the mainnet runbook (kept with the application, not in this repository) 1.4 both say the safety tier (`admin`, `support`, `claim`) is
+RESERVED.md and section 1.4 of the mainnet runbook (kept with the application, not in this repository) both say the safety tier (`admin`, `support`, `claim`) is
 registered by us so that nobody can run a phishing kit on our rails, that renewal is free
 from the treasury key, and that "somebody has to remember". Nothing did. The sentinel
 watched JoyID, the quantum lock, the price cell, the shop and the app, and not one name.
 Thirty days after a forgotten renewal, `support.cell` would have been a stranger's,
 publishing a payout address at `support@cellula.id`.
 
-a script (kept with the application, not in this repository) now reads a watch list on the server (label, optional owner id) and
+A script (kept with the application, not in this repository) now reads a watch list on the server (label, optional owner id) and
 raises a finding when a name there is not registered, has changed owner, or is inside
 sixty days of lapsing, which with the grace period is ninety days before anybody can take
 it. Proven both ways on 2026-09-17: a missing name and a wrong owner each fired, a correct

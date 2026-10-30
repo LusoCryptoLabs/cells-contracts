@@ -59,7 +59,7 @@ hygiene gap, not a security one (front-running protection comes entirely from
 - **cells-core** `commitment()`, `COMMIT_MIN_DELAY`, `SECRET_LEN`.
 - **SDK** `commitment()` (drift-tested vs the Rust bytes), `CellsClient.commit()` +
   `register({ secret, commit })` + `registerWithCommit()` convenience.
-- **scripts** a script (kept with the application, not in this repository) (commit → wait → reveal, commit persisted to
+- **scripts**: a script kept with the application, not in this repository (commit → wait → reveal, commit persisted to
   a local file so an immature reveal is safely re-runnable).
 - **UI** a two-step Register panel (Commit → maturity countdown → Reveal & register).
 

@@ -30,8 +30,8 @@ between 33 and 40 characters (until the flat floor landed those lengths were
 unregisterable), so it was checked by asking the node directly: a real-shaped 40-character
 v2 AccountCell submitted to `test_tx_pool_accept`, which runs the full verifier and
 broadcasts nothing, was refused at 290 CKB with `InsufficientCellCapacity` and the node's
-own figure, **291 CKB occupied**, and cleared the capacity check at 291. Repeat it with
-`node a proof script (kept with the application, not in this repository).
+own figure, **291 CKB occupied**, and cleared the capacity check at 291. A proof script
+(kept with the application, not in this repository) repeats it.
 
 | | bytes | |
 |---|---|---|
@@ -83,7 +83,7 @@ of something the label determines. Verified against every live name on Pudge, no
 against the contract's claim about itself.
 
 Checked 2026-09-09 against the live namespace: **18 of 18 names**, every id equal to
-`blake2b(label)[..20]`. Repeat it with `node a proof script (kept with the application, not in this repository).
+`blake2b(label)[..20]`. A proof script (kept with the application, not in this repository) repeats it.
 
 The linked list keeps working: `next` is stored (it is genuinely independent), and a
 cell's own id is recomputed from its label wherever `covers`/`between` need it.
@@ -201,7 +201,7 @@ one decision and must be made together.
 
 Also corrected from the first draft: nothing is "freed today". The layout has no version
 field before byte 112 and `parse` reads fixed offsets, so this is a redeploy, not an
-upgrade, and no existing cell shrinks. a proof script (kept with the application, not in this repository) said otherwise
+upgrade, and no existing cell shrinks. A proof script (kept with the application, not in this repository) said otherwise
 and has been fixed.
 
 **And that does not solve the problem in the title.** A fifth off is worth having and is

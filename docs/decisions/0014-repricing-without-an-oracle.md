@@ -98,7 +98,7 @@ decision at mainnet.
    $2 to $15 for three consecutive days (so a wick does not page anyone). Its real job is
    to *produce the evidence* that settles this question in twelve months: if it fires more
    than three times in a year, the keeper is justified; if it fires once, it is not.
-2. **A a script (kept with the application, not in this repository) script.** the deployment runbook (kept with the application, not in this repository) lists five files that must stay
+2. **A script to sync a deploy.** The deployment runbook (kept with the application, not in this repository) lists five files that must stay
    in sync after any deploy and there is no script that does it. That is the actual pain
    behind "repricing is expensive", and fixing it makes *every* upgrade cheaper, not just
    pricing ones.
@@ -259,7 +259,7 @@ built, on testnet first, exactly as that section asked. What is live:
   cell as a dep paid **4 500 CKB**, the schedule times the factor (`0x4976480c…`); one
   without the dep paid the full **5 000 CKB** and was accepted (`0x6d69c675…`), the
   fail-safe direction; an update inside the cooldown was refused by consensus as immature.
-  The positive update needs the cell to be a day old (a script (kept with the application, not in this repository), or the keeper);
+  The positive update needs the cell to be a day old (the keeper, or a script kept with the application);
   six hours since the amendment below.
 - The keeper runs every three hours, one instance per network, on our server. Its first run read the
   live cell, took the median of three price feeds and held at 0.3% drift, a 5+ name being
@@ -309,7 +309,7 @@ and `overflow-checks` bakes a `core::panic::Location`, carrying the **line numbe
 site in `cells-core`, into every bounds check that inlines from it. Exactly one byte moved,
 at `0xdc0`, a line going 625 to 626; changing the constant's value, or arithmetic
 `account-cell-type` never calls, moved nothing at all. It is line positions, not contents
-(measured in the deployment runbook (kept with the application, not in this repository) 3c). Cosmetic, and still a MISMATCH, so rather than leave the
+(measured in section 3c of the deployment runbook, kept with the application and not in this repository). Cosmetic, and still a MISMATCH, so rather than leave the
 deployed binary unreproducible from the repo
 it was upgraded in place too, same type id, same 39 888 bytes
 (tx `0x38bd70ca61dd2bc5db2b4b2491ad45cc270392c114fcdab94fba40ab93f1b119`), and `verify-onchain`
