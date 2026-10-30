@@ -10,7 +10,7 @@ CCC, the ckb-devrel TypeScript SDK for CKB, now lets an app resolve names and ot
 
 - The hook is neutral: an app sets an `AddressResolver` on its client, and CCC ships no resolver of its own. It works for .cell, .bit or any other naming system.
 - The CCC docs describe it on the Address concepts page, in English and Chinese.
-- Nothing resolves .cell through CCC until our resolver is published in cellula-sdk.
+- CCC itself resolves no .cell names. Our resolver, `cellResolver()`, shipped in [cellula-sdk 0.2.0](https://www.npmjs.com/package/cellula-sdk/v/0.2.0) on 2026-09-28; an app that sets it on its client resolves .cell through `Address.fromString`.
 
 ## 2026-09-25: .cell in ckbadger
 
