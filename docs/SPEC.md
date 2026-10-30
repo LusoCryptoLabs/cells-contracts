@@ -31,8 +31,9 @@ offset  bytes  field
 
 The id is not stored. It is `blake2b(label)[..20]`, recomputed wherever it is needed, and
 the root sentinel, whose label is empty, has id zero by definition. A 40-character name
-occupies 232 CKB, and every name locks a flat 240 CKB of refundable rent whatever its
-length.
+occupies 232 CKB, and every name locks a flat 240 CKB as its deposit whatever its length.
+The deposit stays in the cell while the name lives; whoever recycles the name, 30 days after
+it expires, takes it ([0005](decisions/0005-recycle-deposit.md)).
 
 Records live in the witness, not in the cell, and the cell holds their hash. A record is a
 `key`, a `label` and a `value`. Keys are `address.<coin type>` (SLIP-44; `address.309` is
