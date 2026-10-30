@@ -8,11 +8,11 @@ Live on CKB mainnet since 2026-09-21.
 
 | | what it guards | lines |
 |---|---|---|
-| `account-cell-type` | every name: the ring that keeps them unique, who may edit, transfer, renew or recycle, and what a registration must pay | 1,074 |
+| `account-cell-type` | every name: the ring that keeps them unique, who may edit, transfer, renew or recycle, and what a registration must pay | 1,155 |
 | `account-lock` | nothing, on purpose. It always succeeds, so the type script above is the only guardian | 25 |
-| `sale-lock` | a listing: the buyer pays the seller and the protocol in one transaction, or nothing moves | 226 |
+| `sale-lock` | a listing: the buyer pays the seller and the protocol in one transaction, or nothing moves | 246 |
 | `price-cell-type` | one cell holding a discount factor, bounded by its own rules | 162 |
-| `cells-core` | the layout, the ring arithmetic and the fee schedule, shared by all four | 1,551 |
+| `cells-core` | the layout, the ring arithmetic and the fee schedule, shared by all four | 1,685 |
 
 ## Check that this is what runs
 
@@ -66,13 +66,16 @@ stops mattering.
 make test
 ```
 
-182 tests: the shared crate's own, and a harness that runs the real scripts in `ckb-testtool`
+223 tests: the shared crate's own, and a harness that runs the real scripts in `ckb-testtool`
 against every action, the properties over the ring and the fees, a fuzz over every parser,
-and the cases where two of the contracts meet in one transaction. One more is marked
-`ignore` on purpose: it is a reproduction, not a guard. It builds the transaction that
-finding F-2 in [docs/SECURITY.md](docs/SECURITY.md) describes, two namespaces sharing one
-treasury and one fee answering both, and fails, which is the point; the rule that closes it
-is one treasury per namespace, and mainnet has one. A closed-loop test against our
+and the cases where two of the contracts meet in one transaction. Three more are marked
+`ignore` on purpose: each is a reproduction, not a guard, and fails, which is the point.
+One builds the transaction that finding F-2 in [docs/SECURITY.md](docs/SECURITY.md)
+describes, two namespaces sharing one treasury and one fee answering both; the rule that
+closes it is one treasury per namespace, and mainnet has one. One shows that an
+anyone-can-pay lock missing from the contracts' list still counts as its owner's consent,
+a limit by design. One replays the listing hole of 2026-09-27 against the builds that ran
+on mainnet until the upgrade of 2026-09-28 closed it. A closed-loop test against our
 off-chain registrar is not here, because the registrar is not.
 
 You need the Rust in `rust-toolchain.toml` and a C compiler that targets RISC-V, which
@@ -85,7 +88,7 @@ builds a test-treasury variant first and points the harness at it.
 ## Read
 
 - [docs/SPEC.md](docs/SPEC.md), what the contracts enforce, in the words of the layout and the actions.
-- [docs/SECURITY.md](docs/SECURITY.md), every finding from nine review passes, what was fixed and what is open, with the full journal beside it.
+- [docs/SECURITY.md](docs/SECURITY.md), every finding from eleven review passes, what was fixed and what is open, with the journal of the first nine beside it.
 - [docs/TRUST.md](docs/TRUST.md), who can change what, and how to check.
 - [docs/decisions/](docs/decisions/), why each rule is the way it is.
 

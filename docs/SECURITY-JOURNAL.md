@@ -1,7 +1,8 @@
 # Security journal
 
-Every internal review pass on the contracts, newest near the top and oldest at the bottom,
-kept as each was written. The summary is [SECURITY.md](SECURITY.md); the plan the fifth
+Every internal review pass on the contracts up to pass 9 (2026-09-17), newest near the top
+and oldest at the bottom, kept as each was written. The two passes of 2026-09-27 are not
+here: they are in [SECURITY.md](SECURITY.md), which is also the summary. The plan the fifth
 pass ran against is [AUDIT-PLAN.md](AUDIT-PLAN.md).
 
 Two things to know before reading. The transaction hashes and deploy ids cited inside are

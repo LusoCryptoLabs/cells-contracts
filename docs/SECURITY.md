@@ -1,13 +1,13 @@
 # Security
 
-What has been looked at, what was found, and what is still open. The full record, pass by
-pass with the transactions that reproduced each finding, is
-[SECURITY-JOURNAL.md](SECURITY-JOURNAL.md); the plan the fifth pass ran against is
-[AUDIT-PLAN.md](AUDIT-PLAN.md).
+What has been looked at, what was found, and what is still open. The record of the first
+nine passes, pass by pass with the transactions that reproduced each finding, is
+[SECURITY-JOURNAL.md](SECURITY-JOURNAL.md); the two passes of 2026-09-27 are recorded only
+here, below. The plan the fifth pass ran against is [AUDIT-PLAN.md](AUDIT-PLAN.md).
 
 **No external audit has been done**, and none gates mainnet
 ([0010](decisions/0010-shipping-without-an-external-audit.md) says why, and what replaced
-it). There is no bug bounty. What exists is nine internal adversarial passes between June
+it). There is no bug bounty. What exists is eleven internal adversarial passes between June
 and September 2026, each held to one rule: a finding is a transaction the VM accepted and
 should not have, reproduced against the deployed binary before anything was changed, fixed
 with a test that fails on the old code, and a control beside it. A green suite proves
