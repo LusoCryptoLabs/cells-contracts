@@ -25,7 +25,7 @@ jobs:
       - name: A C compiler that targets RISC-V, for ckb-std's shim
         run: sudo apt-get install -y -qq clang llvm
       - name: Cache cargo
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~/.cargo/registry
