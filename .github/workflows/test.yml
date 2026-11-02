@@ -19,7 +19,7 @@ jobs:
       CC: clang
       AR: llvm-ar
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Toolchain from rust-toolchain.toml
         run: rustup show
       - name: A C compiler that targets RISC-V, for ckb-std's shim
@@ -43,7 +43,7 @@ jobs:
     # No CC override here on purpose: the mainnet binaries were built with the GNU RISC-V
     # toolchain, and cc-rs picks it up by itself once it is installed.
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Toolchain from rust-toolchain.toml
         run: rustup show
       - name: The GNU RISC-V toolchain the mainnet binaries were built with
