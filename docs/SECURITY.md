@@ -42,6 +42,7 @@ nothing on its own; several of the entries below sat behind tests that could not
 | F-2 | Info here, High if ignored | open, operational | two namespaces sharing one treasury would each count the same fee; the rule is one treasury per namespace, and mainnet has one |
 | F-10 | Low | open | the Rust encoder clamps an oversized length prefix instead of refusing; nothing on chain calls it, and the decoder refuses the result |
 | T-1 | High | open, by design | the upgrade key can rewrite every rule; see [TRUST.md](TRUST.md) |
+| payment data, 2026-11-05 | Low | fixed | a fee, an inviter's cut or a seller's payout paid into a cell with data counted as paid |
 
 Two critical findings in the off-chain SDK, a signature-object forgery for one wallet type and a
 payee-chosen anchor that turned "paid" into a confident "not paid", are in the journal and
@@ -124,6 +125,31 @@ UTC), `sale-lock` in tx `0x020f7f9e5607a8e7d1e94d4c1f3d5c52c204d2f53fb097f43ce7f
 2026-09-27 are live on mainnet. The builds before the upgrade (`0xf86bdba9…`,
 `0xf1160f64…`) stay in `tests/fixtures`; an ignored test in `consent_paths.rs` still
 reproduces the listing hole against them.
+
+## 2026-11-05: a payment with data
+
+Found by a mutation engine run over the account cell's five actions and the sale lock's buy.
+Both counted a payment by its lock and its type only, so a fee, an inviter's cut or a seller's
+payout paid into a cell with data passed. The payee kept the CKB under their own lock, but
+wallets count and spend plain CKB as cells with no type and no data, so the payment did not
+show in their balance. Nothing was lost.
+
+`is_pure_output` (account-cell-type) and `paid_to_pure` (sale-lock) now require no type and
+empty data, together, since F-9 (SECURITY-JOURNAL.md) counts the same outputs from both
+sides. Four tests, each failing on the code before and passing after: `register_rejects_a_fee_output_with_data`,
+`referral_rejects_a_cut_with_data`, `a_payout_with_data_is_not_a_payment`,
+`a_treasury_output_with_data_is_not_the_fee`.
+
+Landed on mainnet on 2026-11-06, in place, by type id: `account-cell-type` in tx
+`0x0d48aa833f97aa1c10f803c03a58e32b4184556f0ddba3137b014aa48df55109` and `sale-lock` in tx
+`0xe72ac6421e9b9cd582dda77383ca0f100d7e05f1f08ae191d1f3b569f35ab7da`, both in block
+20,943,808 (20:30:45 UTC). Code hashes and every name stay as they were. Built with rustc
+1.96.0 and `gcc-riscv64-unknown-elf` 13.2.0, the same toolchain as before:
+
+| contract | bytes | data hash |
+|---|---|---|
+| account-cell-type | 44,072 | `0xe44bd56626ef4d17d8a62c6819924f213e5151836a60fdbc630645cdd37c7d98` |
+| sale-lock | 18,632 | `0x00744b0fbf48cf261c0263843f38099ce0d66c57695f9e7330b80299fe20be61` |
 
 ## What has not been looked at
 

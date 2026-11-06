@@ -100,9 +100,9 @@ nothing deployed against it is disturbed. That is what the upgrade on 2026-09-21
 
 | contract | data hash | dep outpoint |
 |---|---|---|
-| account-cell-type | `0x99ea60a4369ed3d596338b66d6818710a1d047758f478dd854dd814b786aa088` | `0x3072417e…:0` |
+| account-cell-type | `0xe44bd56626ef4d17d8a62c6819924f213e5151836a60fdbc630645cdd37c7d98` | `0x0d48aa83…:0` |
 | account-lock | `0xa46c19f2262abc0d0db0de3952b7477792b36b392645e0f60e74637ae3e3f13b` | `0x522c91d3…:1` |
-| sale-lock | `0x57cdfaa46bc62012315f7c64719f01b43accb66bfc091183a751d59309da3068` | `0x020f7f9e…:0` |
+| sale-lock | `0x00744b0fbf48cf261c0263843f38099ce0d66c57695f9e7330b80299fe20be61` | `0xe72ac642…:0` |
 | price-cell-type | `0x238e74e1d2d5bf8f06f9f4b0bb352c2addd531351a45cfeddf3ff5f6f5662342` | `0xb3d2428e…:0` |
 
 The scripts as the chain knows them:

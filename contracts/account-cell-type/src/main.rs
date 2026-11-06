@@ -413,8 +413,15 @@ fn signed_by(lock_hash: &[u8]) -> bool {
 /// payee does not control (an always-fail, a joint-custody type) meets the capacity
 /// while the funds are not theirs to spend, a burn or a ransom lever on what the
 /// protocol earns. A real payment is an ordinary cell.
+///
+/// And one with no data. Wallets count and spend plain CKB as cells with no type and no
+/// data, so a fee paid into a cell with data kept its capacity and its lock but left the
+/// payee's balance. `sale-lock` counts a payment the same way.
 fn is_pure_output(i: usize) -> Result<bool, Error> {
-    Ok(load_cell_type_hash(i, Source::Output).map_err(|_| Error::Encoding)?.is_none())
+    if load_cell_type_hash(i, Source::Output).map_err(|_| Error::Encoding)?.is_some() {
+        return Ok(false);
+    }
+    Ok(load_cell_data(i, Source::Output).map_err(|_| Error::Encoding)?.is_empty())
 }
 
 /// What the PURE outputs pay to `lock_hash`, summed like the treasury's own total.

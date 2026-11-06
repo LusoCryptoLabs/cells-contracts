@@ -395,7 +395,7 @@ fn verify_priced(
     let outputs_data: Vec<_> = outs
         .iter()
         .map(|c| {
-            if c.plain { Bytes::new().pack() } else { with_ident(&c.data, c.owner, c.manager.unwrap_or(c.owner)).pack() }
+            if c.plain { c.data.clone().pack() } else { with_ident(&c.data, c.owner, c.manager.unwrap_or(c.owner)).pack() }
         })
         .collect();
 
@@ -525,6 +525,16 @@ fn register_rejects_a_typed_fee_output() {
     assert_code(&res, 42, "a fee paid into a typed cell is not a payment to the treasury");
 }
 
+/// The same for data: a fee cell with data keeps the treasury's lock and capacity but is
+/// not plain CKB to any wallet. Found by the mutation engine on 2026-11-05.
+#[test]
+fn register_rejects_a_fee_output_with_data() {
+    let (i, mut o) = register_fixture();
+    o[2].data = Bytes::from_static(&[0u8; 8]); // the treasury output, eight bytes of data
+    let res = verify_full(&[i], &o, b"register", &[], false, Some(&Commit::good()));
+    assert_code(&res, 42, "a fee paid into a cell with data is not a payment to the treasury");
+}
+
 #[test]
 fn register_is_permissionless() {
     let (i, o) = register_fixture();
@@ -556,6 +566,15 @@ fn referral_fixture(treasury: u64, to: L, cut: u64) -> (InC, Vec<OutC>) {
     o.push(treasury_out(treasury));
     o.push(plain_out(to, cut));
     (i, o)
+}
+
+/// An inviter's cut in a cell with data is not paid, so the treasury is owed the whole fee.
+#[test]
+fn referral_rejects_a_cut_with_data() {
+    let (i, mut o) = referral_fixture(TREASURY_AFTER_CUT, L::B, CUT_1Y);
+    o[3].data = Bytes::from_static(&[0u8; 8]); // the inviter's cut
+    let res = verify_sub(&[i], &o, b"register", &[], false, Some(&Commit::good()), Some((&inviter_cell(), L::B)));
+    assert_code(&res, 42, "a cut paid into a cell with data does not discount the treasury's fee");
 }
 
 #[test]
