@@ -45,7 +45,8 @@ use ckb_std::{
     ckb_types::prelude::Entity,
     error::SysError,
     high_level::{
-        load_cell_capacity, load_cell_lock, load_cell_lock_hash, load_cell_type, load_script,
+        load_cell_capacity, load_cell_data, load_cell_lock, load_cell_lock_hash, load_cell_type,
+        load_script,
     },
 };
 
@@ -219,7 +220,7 @@ fn owed_over_offers(seller: Option<&[u8; 32]>, my_code: &[u8], my_htype: u8) -> 
     }
 }
 
-/// What the PURE outputs (no type script) pay to a lock. The offer cell's own capacity
+/// What the PURE outputs (no type script, no data) pay to a lock. The offer cell's own capacity
 /// is not counted here as a payment, because it is an input under the sale lock rather
 /// than an output: `owed_over_offers` adds it to what the seller is owed instead, so it
 /// comes back to them in the same transaction that sells the name.
@@ -231,7 +232,10 @@ fn paid_to_pure(lock_hash: &[u8; 32]) -> Result<u64, Err> {
             Ok(h) => {
                 if &h == lock_hash {
                     let typed = load_cell_type(i, Source::Output).map_err(|_| Err::Encoding)?;
-                    if typed.is_none() {
+                    // No data either: a payment in a cell with data keeps its lock but
+                    // leaves the payee's plain balance. `account-cell-type` agrees.
+                    let data = load_cell_data(i, Source::Output).map_err(|_| Err::Encoding)?;
+                    if typed.is_none() && data.is_empty() {
                         let c =
                             load_cell_capacity(i, Source::Output).map_err(|_| Err::Encoding)?;
                         paid = paid.saturating_add(c);

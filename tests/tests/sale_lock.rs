@@ -73,6 +73,8 @@ struct Case {
     /// Output indices that carry a (always-success) type script, so a hostile-typed
     /// payout can be tested: such an output is not a pure payment and must not count.
     typed_outputs: Vec<usize>,
+    /// Output indices that carry eight bytes of data: not plain CKB, so not a payment.
+    data_outputs: Vec<usize>,
 }
 
 impl Case {
@@ -86,6 +88,7 @@ impl Case {
             bad_args: None,
             seller: W::Seller,
             typed_outputs: vec![],
+            data_outputs: vec![],
         }
     }
 }
@@ -182,7 +185,9 @@ fn run(c: Case) -> Result<u64, String> {
             }
         })
         .collect();
-    let outputs_data: Vec<Bytes> = c.outputs.iter().map(|_| Bytes::new()).collect();
+    let outputs_data: Vec<Bytes> = (0..c.outputs.len())
+        .map(|i| if c.data_outputs.contains(&i) { Bytes::from_static(&[0u8; 8]) } else { Bytes::new() })
+        .collect();
 
     let tx = ctx.complete_tx(
         TransactionBuilder::default()
@@ -326,6 +331,20 @@ fn a_hostile_type_on_the_payout_is_not_a_payment() {
 fn a_hostile_type_on_the_treasury_output_is_not_the_fee() {
     let res = run(Case { typed_outputs: vec![1], ..Case::buy() });
     assert_code(&res, 4, "a typed treasury output does not count as the fee");
+}
+
+#[test]
+fn a_payout_with_data_is_not_a_payment() {
+    // Same capacity, same lock, eight bytes of data: wallets do not count it as the
+    // seller's CKB. Found by the mutation engine on 2026-11-05.
+    let res = run(Case { data_outputs: vec![0], ..Case::buy() });
+    assert_code(&res, 3, "a payout with data does not count as paying the seller");
+}
+
+#[test]
+fn a_treasury_output_with_data_is_not_the_fee() {
+    let res = run(Case { data_outputs: vec![1], ..Case::buy() });
+    assert_code(&res, 4, "a treasury output with data does not count as the fee");
 }
 
 #[test]
